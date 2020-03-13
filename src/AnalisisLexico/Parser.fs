@@ -34,6 +34,7 @@ let run (parser: Parser<'A>) entrada inicio =
 
 /// "bindP" takes a parser-producing function f, and a parser p
 /// and passes the output of p into f, to create a new parser
+/// TODO: Remover uso de bindP porque pierde el state de los parsers.
 let bindP f p =
     let innerFn entrada inicio =
         let result1 = run p entrada inicio
@@ -62,9 +63,21 @@ let returnP x =
     Parser innerFn
 
 
-/// apply a function to the value inside a parser
-let mapP f =
-    bindP (f >> returnP)
+/// Aplica una función al resultado de un Parser
+let mapP f p =
+    let inner entrada inicio =
+        let res = run p entrada inicio
+        match res with
+        | Error err -> Error err
+        | Exito ex ->
+            Exito {
+                res = f ex.res
+                posInicio = ex.posInicio
+                posFinal = ex.posFinal
+                tipo = ex.tipo
+            }
+
+    Parser inner
 
 let ( <!> ) = mapP
 let ( |>> ) x f = mapP f x
@@ -123,12 +136,12 @@ let ( .>>. ) = parseLuego
 
 /// Intenta aplicar p1 y si falla aplica p2
 let parseOtro p1 p2 =
-    let innerFn input entrada =
-        let result1 = run p1 input entrada
+    let innerFn entrada inicio =
+        let result1 = run p1 entrada inicio
 
         match result1 with
         | Exito _ -> result1
-        | Error _ -> run p2 input entrada
+        | Error _ -> run p2 entrada inicio
 
     Parser innerFn
 

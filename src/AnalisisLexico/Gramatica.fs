@@ -3,7 +3,7 @@ module Gramatica
 open Parser
 
 
-let parseOperadores = [
+let operadores = [
     '+'
     '-'
     '='
@@ -12,6 +12,7 @@ let parseOperadores = [
     '\\'
     '/'
     '\''
+    '|'
     '@'
     '#'
     '·'
@@ -34,6 +35,16 @@ let parseOperadores = [
     ';'
 ]
 
-let private parseOperador = cualquier parseOperadores
+let private charListToStr (caracteres: char list) =
+    let rec inner acc = function
+        | [] -> acc
+        | c::cs -> inner (acc + c.ToString()) cs
+
+    inner "" caracteres
+
+
+let private parseOperador = cualquier operadores
+let parseOperadores = parseVarios1 parseOperador |>> charListToStr
+
 
 

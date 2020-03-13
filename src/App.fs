@@ -1,6 +1,8 @@
 module App
 
 open Browser.Dom
+open Gramatica
+open Parser
 
 let mutable count = 0
 
@@ -11,7 +13,9 @@ let entrada = document.getElementById "entrada" :?> Browser.Types.HTMLInputEleme
 
 
 let parsearEntrada () =
-    printf "La salida es `%s`" "eehh"
+    let txtEntrada = entrada.value
+    let res = run parseOperadores txtEntrada 0
+    printf "La salida es `%A`" res
     ()
 
 
