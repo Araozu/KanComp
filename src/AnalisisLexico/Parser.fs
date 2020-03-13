@@ -106,7 +106,7 @@ let lift2 f xP yP =
 
 let parseCaracter caracter =
     let inner entrada inicio = 
-        if String.IsNullOrEmpty entrada then
+        if String.IsNullOrEmpty entrada || inicio >= entrada.Length then
             Error "Entrada terminada"
         else
             let c = entrada.[inicio]
@@ -125,11 +125,26 @@ let parseCaracter caracter =
 
 /// Aplica p1 y luego p2
 let parseLuego p1 p2 =
-    p1 >>= (fun p1Result ->
-        p2 >>= (fun p2Result ->
-            returnP (p1Result, p2Result)
-        )
-    )
+    let inner entrada inicio =
+        let res1 = run p1 entrada inicio
+
+        match res1 with
+        | Error err -> Error err
+        | Exito ex1 ->
+            let res2 = run p2 entrada ex1.posFinal
+
+            match res2 with
+            | Error err -> Error err
+            | Exito ex2 ->
+                Exito {
+                    res = (ex1.res, ex2.res)
+                    posInicio = inicio
+                    posFinal = ex2.posFinal
+                    tipo = None
+                }
+
+    Parser inner
+
 
 let ( .>>. ) = parseLuego
 
@@ -185,8 +200,8 @@ let rec private parseVariosHelper parser entrada inicio =
     | Exito ex ->
         let (resultado, posSig) = (ex.res, ex.posFinal)
         let (valores, posFinal) = parseVariosHelper parser entrada posSig
-        let valores = resultado::valores
-        (valores, posFinal)
+
+        (resultado::valores, posFinal)
 
 
 let parseVarios parser =
@@ -248,7 +263,7 @@ let parseSegundoOpcional p1 p2 =
 
 let parseCualquierMenos caracter =
     let inner entrada inicio =
-        if String.IsNullOrEmpty entrada then
+        if String.IsNullOrEmpty entrada || inicio >= entrada.Length then
             Error "Entrada terminada"
         else
             let c = entrada.[inicio]
@@ -274,14 +289,10 @@ let pOpc p =
 
 
 /// Ignora el resultado del parser derecho
-let (.>>) p1 p2 =
-    p1 .>>. p2
-    |> mapP (fun (a,_) -> a)
+let (.>>) p1 p2 = p1 .>>. p2 |>> fun (a,_) -> a
 
 /// Ignora el resultado del parser izq
-let (>>.) p1 p2 =
-    p1 .>>. p2
-    |> mapP (fun (_,b) -> b)
+let (>>.) p1 p2 = p1 .>>. p2 |>> fun (_,b) -> b
 
 /// Ignora el resultado de los parsers de los costados
 let between p1 p2 p3 =
