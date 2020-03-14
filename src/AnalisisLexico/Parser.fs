@@ -260,6 +260,8 @@ let parseSegundoOpcional p1 p2 =
     
     Parser inner
 
+let (<?>) = parseSegundoOpcional
+
 
 let parseCualquierMenos caracter =
     let inner entrada inicio =

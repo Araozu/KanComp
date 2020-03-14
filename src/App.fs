@@ -14,7 +14,7 @@ let entrada = document.getElementById "entrada" :?> Browser.Types.HTMLInputEleme
 
 let parsearEntrada () =
     let txtEntrada = entrada.value
-    let res = run parseOperadores txtEntrada 0
+    let res = run parseIdentificadorTipo txtEntrada 0
     printf "La salida es `%A`" res
     ()
 
