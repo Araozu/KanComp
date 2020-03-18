@@ -1,14 +1,23 @@
 module App
 
-// open Browser.Dom
 open Gramatica
-open System
 open Parser
+
+
+let entrada = "sea nombre = 300"
+let extraerSigToken = generarParser entrada
+
+
+let rec imprimirTokens () =
+    let res = extraerSigToken ()
+    match res with
+    | Error _ -> ()
+    | Exito ex ->
+        printfn "%A" ex
+        imprimirTokens ()
 
 
 [<EntryPoint>]
 let main _ =
-    let entrada = "\t"
-    let res = run parserGeneral entrada 0
-    printf "El resultado es:\n%A\n\n" res
+    imprimirTokens ()
     0

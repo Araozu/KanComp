@@ -119,7 +119,7 @@ let parseVariasOpciones parsers =
 
 let parseEspBlanco =
     let pEB = parseCaracter ' '
-    parseVarios pEB |>> charListToStr
+    parseVarios1 pEB |>> charListToStr
 
 
 
@@ -141,7 +141,7 @@ let generarParser entrada =
     let mutable esInicioDeLinea = true
     let mutable posActual = 0
 
-    let rec extraerToken () ->
+    let rec extraerToken () =
         let resultado = run parserGeneral entrada posActual
 
         match resultado with
@@ -161,5 +161,12 @@ let generarParser entrada =
                 // Se encontró 4 espacios blancos en medio de una linea.
                 posActual <- ex.posFinal
                 extraerToken ()
-            | _ -> resultado
+            | _ ->
+                esInicioDeLinea <- false
+                posActual <- ex.posFinal
+                resultado
+
+    extraerToken
+
+
 
