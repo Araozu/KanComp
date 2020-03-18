@@ -39,7 +39,7 @@ let parseNumero =
         num.ToString() + match decimal with
                          | None -> ""
                          | Some s -> s
-        |> double
+
 
 
 let parseTexto =
@@ -58,7 +58,7 @@ let parseComentario =
     parseInicio >>. parseResto
 
 
-let parseRestoIdentificador =
+let private parseRestoIdentificador =
     let pTest = parseDigito <|> parseMayuscula <|> parseMinuscula <|> parseGuionBajo <|> parseComillaSimple
     parseVarios pTest |>> charListToStr
 
@@ -74,3 +74,65 @@ let parseIdentificador =
 
 let parseIdentificadorTipo =
     parseMayuscula .>>. parseRestoIdentificador |>> fun (c, s) -> c.ToString() + s
+
+
+let parseNuevaLinea = parseCaracter '\n' |>> fun c -> c.ToString()
+
+
+
+// Esta fun. asume que se encuentra al inicio de linea.
+let parseIdentacion =
+    let tuplaAStr (((c1,c2),c3),c4) =
+        c1.ToString() + c2.ToString() + c3.ToString() + c4.ToString()
+
+    let pEsp = parseCaracter ' '
+    let parseIdEspBlanco = pEsp .>>. pEsp .>>. pEsp .>>. pEsp |>> tuplaAStr
+
+    let pTab = parseCaracter '\t' |>> fun c -> c.ToString()
+    parseIdEspBlanco <|> pTab
+
+
+let parseVariasOpciones parsers =
+    let inner entrada pos =
+
+        let rec inner2 parsers =
+            match parsers with
+            | p::ps ->
+                let resultado = run p entrada pos
+
+                match resultado with
+                | Exito ex ->
+                    Exito {
+                        res = ex.res
+                        posInicio = ex.posInicio
+                        posFinal = ex.posFinal
+                        tipo = ex.tipo
+                    }
+                | _ -> inner2 ps
+            | [] -> Error "Ningun parser se adapta a la entrada."
+
+
+        inner2 parsers
+
+    Parser inner
+
+
+let parserGeneral = parseVariasOpciones [
+    parseIdentacion
+    parseNuevaLinea
+    parseIdentificadorTipo
+    parseIdentificador
+    parseGenerico
+    parseComentario
+    parseNumero
+    parseOperadores
+]
+
+    
+
+let generarParser () =
+    let mutable esInicioDeLinea = true
+    let mutable posActual = 0
+
+    fun _ -> ()
+

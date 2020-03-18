@@ -6,11 +6,22 @@ open System
 //  Estructuras
 // ===================================
 
+type Token =
+    | Identacion
+    | NuevaLinea
+    | IdentificadorTipo
+    | Generico
+    | Comentario
+    | Numero
+    | Operadores
+    | Nada
+
+
 type Exito<'A> = {
     res: 'A;
     posInicio: int;
     posFinal: int
-    tipo: string option
+    tipo: Token
 }
 
 
@@ -57,7 +68,7 @@ let returnP x =
             res = x
             posInicio = inicio
             posFinal = inicio
-            tipo = None
+            tipo = Nada
         }
 
     Parser innerFn
@@ -115,7 +126,7 @@ let parseCaracter caracter =
                     res = c
                     posInicio = inicio
                     posFinal = inicio + 1
-                    tipo = None
+                    tipo = Nada
                 }
             else
                 Error <| sprintf "Se esperaba '%c', pero se obtuvo '%c'." caracter c
@@ -140,7 +151,7 @@ let parseLuego p1 p2 =
                     res = (ex1.res, ex2.res)
                     posInicio = inicio
                     posFinal = ex2.posFinal
-                    tipo = None
+                    tipo = Nada
                 }
 
     Parser inner
@@ -211,7 +222,7 @@ let parseVarios parser =
             res = datos
             posInicio = inicio
             posFinal = posFinal
-            tipo = None
+            tipo = Nada
         }
 
     Parser inner
@@ -227,7 +238,7 @@ let parseVarios1 parser =
             res = datos
             posInicio = inicio
             posFinal = posFinal
-            tipo = None
+            tipo = Nada
         }
 
     Parser inner
@@ -248,14 +259,14 @@ let parseSegundoOpcional p1 p2 =
                     res = (ex1.res, Some ex2.res)
                     posInicio = inicio
                     posFinal = ex2.posFinal
-                    tipo = None
+                    tipo = Nada
                 }
             | Error _ ->
                 Exito {
                     res = (ex1.res, None)
                     posInicio = inicio
                     posFinal = ex1.posFinal
-                    tipo = None
+                    tipo = Nada
                 }
     
     Parser inner
@@ -276,7 +287,7 @@ let parseCualquierMenos caracter =
                     res = c
                     posInicio = inicio
                     posFinal = inicio + 1
-                    tipo = None
+                    tipo = Nada
                 }
         
         
