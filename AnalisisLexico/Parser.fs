@@ -14,6 +14,7 @@ type Token =
     | Generico
     | Comentario
     | Numero
+    | Texto
     | Operadores
     | EspBlanco
     | Nada

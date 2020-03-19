@@ -124,14 +124,15 @@ let parseEspBlanco =
 
 
 let parserGeneral = parseVariasOpciones [
-    mapTipo parseEspBlanco EspBlanco
     mapTipo parseIdentacion Identacion
+    mapTipo parseEspBlanco EspBlanco
     mapTipo parseNuevaLinea NuevaLinea
     mapTipo parseIdentificadorTipo IdentificadorTipo
     mapTipo parseIdentificador Identificador
     mapTipo parseGenerico Generico
     mapTipo parseComentario Comentario
     mapTipo parseNumero Numero
+    mapTipo parseTexto Texto
     mapTipo parseOperadores Operadores
 ]
 
@@ -161,6 +162,9 @@ let generarParser entrada =
                 // Se encontró 4 espacios blancos en medio de una linea.
                 posActual <- ex.posFinal
                 extraerToken ()
+            | Identacion ->
+                posActual <- ex.posFinal
+                resultado
             | _ ->
                 esInicioDeLinea <- false
                 posActual <- ex.posFinal

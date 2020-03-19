@@ -4,7 +4,7 @@ open Gramatica
 open Parser
 
 
-let entrada = "sea nombre = 300"
+let entrada = "sea nombre = \"Hola mundo! :D\"\nsea\nhola\n\t    mundo"
 let extraerSigToken = generarParser entrada
 
 
