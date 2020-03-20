@@ -141,6 +141,7 @@ let parserGeneral = parseVariasOpciones [
 let generarParser entrada =
     let mutable esInicioDeLinea = true
     let mutable posActual = 0
+    let mutable ultimoToken: Resultado<string> = Error ""
 
     let rec extraerToken () =
         let resultado = run parserGeneral entrada posActual
@@ -150,21 +151,40 @@ let generarParser entrada =
         | Exito ex ->
             match ex.tipo with
             | Nada -> Error "Se encontró un token huerfano"
+
+            | EspBlanco when esInicioDeLinea ->
+
+                let sigToken = run parserGeneral entrada ex.posFinal
+                match sigToken with
+                | Error _ ->
+                    posActual <- ex.posFinal
+                    extraerToken ()
+                | Exito ex2 ->
+                    if ex2.tipo = NuevaLinea then
+                        posActual <- ex.posFinal
+                        extraerToken ()
+                    else
+                        Error "Error de identación."
+
             | EspBlanco ->
                 posActual <- ex.posFinal
                 esInicioDeLinea <- false
                 extraerToken ()
+
             | NuevaLinea ->
                 posActual <- ex.posFinal
                 esInicioDeLinea <- true
                 extraerToken ()
+
             | Identacion when not esInicioDeLinea ->
-                // Se encontró 4 espacios blancos en medio de una linea.
+                // Se encontró 4 espacios blancos o un Tab en medio de una linea.
                 posActual <- ex.posFinal
                 extraerToken ()
+
             | Identacion ->
                 posActual <- ex.posFinal
                 resultado
+
             | _ ->
                 esInicioDeLinea <- false
                 posActual <- ex.posFinal
