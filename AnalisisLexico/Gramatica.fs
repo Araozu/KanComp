@@ -138,10 +138,24 @@ let parserGeneral = parseVariasOpciones [
 
 
 
+// TODO: Diferenciar entre errores normales y errores por EOF
 let generarParser entrada =
     let mutable esInicioDeLinea = true
     let mutable posActual = 0
-    let mutable ultimoToken: Resultado<string> = Error ""
+    let mutable identacionSobrante: Resultado<string> list = []
+
+
+    let rec sigTokenLuegoDeIdentacion posActual =
+        let sigToken = run parserGeneral entrada posActual
+        match sigToken with
+        | Error _ -> (Nada, -1)
+        | Exito ex ->
+            match ex.tipo with
+            | Identacion ->
+                identacionSobrante <- sigToken :: identacionSobrante
+                sigTokenLuegoDeIdentacion ex.posFinal
+            | _ -> (ex.tipo, posActual)
+
 
     let rec extraerToken () =
         let resultado = run parserGeneral entrada posActual
@@ -182,15 +196,37 @@ let generarParser entrada =
                 extraerToken ()
 
             | Identacion ->
-                posActual <- ex.posFinal
-                resultado
+                
+                let (tipo, sigPos) = sigTokenLuegoDeIdentacion ex.posFinal
+                match tipo with
+                | Nada _ ->
+                    posActual <- ex.posFinal
+                    resultado
+                | NuevaLinea | EspBlanco ->
+                    identacionSobrante <- []
+                    posActual <- sigPos
+                    extraerToken ()
+                | _ ->
+                    posActual <- ex.posFinal
+                    posActual <- sigPos
+                    resultado
+
 
             | _ ->
                 esInicioDeLinea <- false
                 posActual <- ex.posFinal
                 resultado
 
-    extraerToken
+
+    let extraerTokenHelper () =
+        match identacionSobrante with
+        | token::resto ->
+            identacionSobrante <- resto
+            token
+        | [] -> extraerToken ()
+
+
+    extraerTokenHelper
 
 
 
