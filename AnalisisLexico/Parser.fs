@@ -7,7 +7,7 @@ open System
 // ===================================
 
 type Token =
-    | Identacion
+    | Indentacion
     | NuevaLinea
     | IdentificadorTipo
     | Identificador
@@ -17,6 +17,8 @@ type Token =
     | Texto
     | Operadores
     | EspBlanco
+    | AgrupacionAb
+    | AgrupacionCer
     | Nada
 
 
@@ -313,6 +315,31 @@ let internal (>>.) p1 p2 = p1 .>>. p2 |>> fun (_,b) -> b
 /// Ignora el resultado de los parsers de los costados
 let internal between p1 p2 p3 =
     p1 >>. p2 .>> p3
+
+
+let internal parseVariasOpciones parsers =
+    let inner entrada pos =
+
+        let rec inner2 parsers =
+            match parsers with
+            | p::ps ->
+                let resultado = run p entrada pos
+
+                match resultado with
+                | Exito ex ->
+                    Exito {
+                        res = ex.res
+                        posInicio = ex.posInicio
+                        posFinal = ex.posFinal
+                        tipo = ex.tipo
+                    }
+                | _ -> inner2 ps
+            | [] -> Error "Ningun parser se adapta a la entrada."
+
+
+        inner2 parsers
+
+    Parser inner
 
 
 let internal mapTipo parser nuevoTipo =

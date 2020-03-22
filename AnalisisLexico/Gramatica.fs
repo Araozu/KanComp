@@ -81,7 +81,7 @@ let internal parseNuevaLinea = parseCaracter '\n' |>> fun c -> c.ToString()
 
 
 // Esta fun. asume que se encuentra al inicio de linea.
-let internal parseIdentacion =
+let internal parseIndentacion =
     let tuplaAStr (((c1,c2),c3),c4) =
         c1.ToString() + c2.ToString() + c3.ToString() + c4.ToString()
 
@@ -92,39 +92,31 @@ let internal parseIdentacion =
     parseIdEspBlanco <|> pTab
 
 
-let internal parseVariasOpciones parsers =
-    let inner entrada pos =
-
-        let rec inner2 parsers =
-            match parsers with
-            | p::ps ->
-                let resultado = run p entrada pos
-
-                match resultado with
-                | Exito ex ->
-                    Exito {
-                        res = ex.res
-                        posInicio = ex.posInicio
-                        posFinal = ex.posFinal
-                        tipo = ex.tipo
-                    }
-                | _ -> inner2 ps
-            | [] -> Error "Ningun parser se adapta a la entrada."
-
-
-        inner2 parsers
-
-    Parser inner
-
-
 let internal parseEspBlanco =
     let pEB = parseCaracter ' '
     parseVarios1 pEB |>> charListToStr
 
 
+let internal parseParenAb = parseCaracter '('
+let internal parseParenCer = parseCaracter ')'
+
+let internal parseLlaveAb = parseCaracter '{'
+let internal parseLlaveCer = parseCaracter '}'
+
+let internal parseCorcheteAb = parseCaracter '['
+let internal parseCorcheteCer = parseCaracter ']'
+
+
+let internal parseSignoAgrupacionAb =
+    escoger [parseParenAb; parseLlaveAb; parseCorcheteAb] |>> fun x -> x.ToString()
+
+
+let internal parseSignoAgrupacionCer =
+    escoger [parseParenCer; parseLlaveCer; parseCorcheteCer] |>> fun x -> x.ToString()
+
 
 let internal parserGeneral = parseVariasOpciones [
-    mapTipo parseIdentacion Identacion
+    mapTipo parseIndentacion Indentacion
     mapTipo parseEspBlanco EspBlanco
     mapTipo parseNuevaLinea NuevaLinea
     mapTipo parseIdentificadorTipo IdentificadorTipo
@@ -134,6 +126,8 @@ let internal parserGeneral = parseVariasOpciones [
     mapTipo parseNumero Numero
     mapTipo parseTexto Texto
     mapTipo parseOperadores Operadores
+    mapTipo parseSignoAgrupacionAb AgrupacionAb
+    mapTipo parseSignoAgrupacionCer AgrupacionCer
 ]
 
 
@@ -151,7 +145,7 @@ let generarParser entrada =
         | Error _ -> (Nada, -1)
         | Exito ex ->
             match ex.tipo with
-            | Identacion ->
+            | Indentacion ->
                 identacionSobrante <- sigToken :: identacionSobrante
                 sigTokenLuegoDeIdentacion ex.posFinal
             | _ -> (ex.tipo, posActual)
@@ -190,12 +184,12 @@ let generarParser entrada =
                 esInicioDeLinea <- true
                 extraerToken ()
 
-            | Identacion when not esInicioDeLinea ->
+            | Indentacion when not esInicioDeLinea ->
                 // Se encontró 4 espacios blancos o un Tab en medio de una linea.
                 posActual <- ex.posFinal
                 extraerToken ()
 
-            | Identacion ->
+            | Indentacion ->
                 
                 let (tipo, sigPos) = sigTokenLuegoDeIdentacion ex.posFinal
                 match tipo with
