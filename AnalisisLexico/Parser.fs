@@ -1,4 +1,4 @@
-module Parser
+module AnalisisLexico.Parser
 
 open System
 
@@ -33,7 +33,7 @@ type Resultado<'A> =
     | Error of string
 
 
-type Parser<'A> = Parser of (string -> int -> Resultado<'A>)
+type internal Parser<'A> = Parser of (string -> int -> Resultado<'A>)
 
 
 // ===================================
@@ -41,7 +41,7 @@ type Parser<'A> = Parser of (string -> int -> Resultado<'A>)
 // ===================================
 
 
-let run (parser: Parser<'A>) entrada inicio =
+let internal run (parser: Parser<'A>) entrada inicio =
     let (Parser p) = parser
     p entrada inicio
 
@@ -49,7 +49,7 @@ let run (parser: Parser<'A>) entrada inicio =
 /// "bindP" takes a parser-producing function f, and a parser p
 /// and passes the output of p into f, to create a new parser
 /// TODO: Remover uso de bindP porque pierde el state de los parsers.
-let bindP f p =
+let internal bindP f p =
     let innerFn entrada inicio =
         let result1 = run p entrada inicio
         match result1 with
@@ -61,11 +61,11 @@ let bindP f p =
 
     Parser innerFn
 
-let ( >>= ) p f = bindP f p
+let internal ( >>= ) p f = bindP f p
 
 
 /// Lift a value to a Parser
-let returnP x =
+let internal returnP x =
     let innerFn _ inicio =
         Exito {
             res = x
@@ -78,7 +78,7 @@ let returnP x =
 
 
 /// Aplica una función al resultado de un Parser
-let mapP f p =
+let internal mapP f p =
     let inner entrada inicio =
         let res = run p entrada inicio
         match res with
@@ -93,23 +93,23 @@ let mapP f p =
 
     Parser inner
 
-let ( <!> ) = mapP
-let ( |>> ) x f = mapP f x
+let internal ( <!> ) = mapP
+let internal ( |>> ) x f = mapP f x
 
 
 /// apply a wrapped function to a wrapped value
-let applyP fP xP =
+let internal applyP fP xP =
     fP >>= (fun f ->
         xP >>= (fun x ->
             returnP (f x)
         )
     )
 
-let ( <*> ) = applyP
+let internal ( <*> ) = applyP
 
 
 /// lift a two parameter function to Parser World
-let lift2 f xP yP =
+let internal lift2 f xP yP =
     returnP f <*> xP <*> yP
 
 
@@ -118,7 +118,7 @@ let lift2 f xP yP =
 // ===================================
 
 
-let parseCaracter caracter =
+let internal parseCaracter caracter =
     let inner entrada inicio = 
         if String.IsNullOrEmpty entrada || inicio >= entrada.Length then
             Error "Entrada terminada"
@@ -138,7 +138,7 @@ let parseCaracter caracter =
 
 
 /// Aplica p1 y luego p2
-let parseLuego p1 p2 =
+let internal parseLuego p1 p2 =
     let inner entrada inicio =
         let res1 = run p1 entrada inicio
 
@@ -160,11 +160,11 @@ let parseLuego p1 p2 =
     Parser inner
 
 
-let ( .>>. ) = parseLuego
+let internal ( .>>. ) = parseLuego
 
 
 /// Intenta aplicar p1 y si falla aplica p2
-let parseOtro p1 p2 =
+let internal parseOtro p1 p2 =
     let innerFn entrada inicio =
         let result1 = run p1 entrada inicio
 
@@ -174,23 +174,23 @@ let parseOtro p1 p2 =
 
     Parser innerFn
 
-let ( <|> ) = parseOtro
+let internal ( <|> ) = parseOtro
 
 
 /// Escoge desde una lista de parsers
-let escoger listOfParsers =
+let internal escoger listOfParsers =
     List.reduce ( <|> ) listOfParsers
 
 
 /// Escoge desde una lista de caracteres
-let cualquier listOfChars =
+let internal cualquier listOfChars =
     listOfChars
     |> List.map parseCaracter
     |> escoger
 
 
 /// Convierte una lista de Parsers a un Parser de listas
-let rec sequence parserList =
+let rec internal sequence parserList =
     
     let cons head tail = head::tail
 
@@ -205,7 +205,7 @@ let rec sequence parserList =
 
 
 
-let rec private parseVariosHelper parser entrada inicio =
+let rec internal parseVariosHelper parser entrada inicio =
 
     let resultado = run parser entrada inicio
     
@@ -218,7 +218,7 @@ let rec private parseVariosHelper parser entrada inicio =
         (resultado::valores, posFinal)
 
 
-let parseVarios parser =
+let internal parseVarios parser =
     let inner entrada inicio =
         let (datos, posFinal) = parseVariosHelper parser entrada inicio
         Exito {
@@ -231,7 +231,7 @@ let parseVarios parser =
     Parser inner
 
 
-let parseVarios1 parser =
+let internal parseVarios1 parser =
     let inner entrada inicio =
         let (datos, posFinal) = parseVariosHelper parser entrada inicio
 
@@ -247,7 +247,7 @@ let parseVarios1 parser =
     Parser inner
 
 
-let parseSegundoOpcional p1 p2 =
+let internal parseSegundoOpcional p1 p2 =
     let inner entrada inicio =
         let res1 = run p1 entrada inicio
         
@@ -274,10 +274,10 @@ let parseSegundoOpcional p1 p2 =
     
     Parser inner
 
-let (<?>) = parseSegundoOpcional
+let internal (<?>) = parseSegundoOpcional
 
 
-let parseCualquierMenos caracter =
+let internal parseCualquierMenos caracter =
     let inner entrada inicio =
         if String.IsNullOrEmpty entrada || inicio >= entrada.Length then
             Error "Entrada terminada"
@@ -298,24 +298,24 @@ let parseCualquierMenos caracter =
 
 
 /// Parsea una ocurrencia opcional de p y lo devuelve en option
-let pOpc p =
+let internal pOpc p =
     let some = p |>> Some
     let none = returnP None
     some <|> none
 
 
 /// Ignora el resultado del parser derecho
-let (.>>) p1 p2 = p1 .>>. p2 |>> fun (a,_) -> a
+let internal (.>>) p1 p2 = p1 .>>. p2 |>> fun (a,_) -> a
 
 /// Ignora el resultado del parser izq
-let (>>.) p1 p2 = p1 .>>. p2 |>> fun (_,b) -> b
+let internal (>>.) p1 p2 = p1 .>>. p2 |>> fun (_,b) -> b
 
 /// Ignora el resultado de los parsers de los costados
-let between p1 p2 p3 =
+let internal between p1 p2 p3 =
     p1 >>. p2 .>> p3
 
 
-let mapTipo parser nuevoTipo =
+let internal mapTipo parser nuevoTipo =
     let inner entrada inicio =
         let res = run parser entrada inicio
         

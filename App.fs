@@ -1,7 +1,7 @@
 module App
 
-open Gramatica
-open Parser
+open AnalisisLexico.Gramatica
+open AnalisisLexico.Parser
 
 
 let entrada = """
