@@ -82,19 +82,11 @@ let internal parseNuevaLinea = parseCaracter '\n' |>> fun c -> c.ToString()
 
 // Esta fun. asume que se encuentra al inicio de linea.
 let internal parseIndentacion =
-    let tuplaAStr (((c1,c2),c3),c4) =
-        c1.ToString() + c2.ToString() + c3.ToString() + c4.ToString()
-
-    let pEsp = parseCaracter ' '
-    let parseIdEspBlanco = pEsp .>>. pEsp .>>. pEsp .>>. pEsp |>> tuplaAStr
+    let pEB = parseCaracter ' '
+    let parseIdEspBlanco = parseVarios1 pEB |>> charListToStr
 
     let pTab = parseCaracter '\t' |>> fun c -> c.ToString()
     parseIdEspBlanco <|> pTab
-
-
-let internal parseEspBlanco =
-    let pEB = parseCaracter ' '
-    parseVarios1 pEB |>> charListToStr
 
 
 let internal parseParenAb = parseCaracter '('
@@ -117,7 +109,6 @@ let internal parseSignoAgrupacionCer =
 
 let internal parserGeneral = parseVariasOpciones [
     mapTipo parseIndentacion Indentacion
-    mapTipo parseEspBlanco EspBlanco
     mapTipo parseNuevaLinea NuevaLinea
     mapTipo parseIdentificadorTipo IdentificadorTipo
     mapTipo parseIdentificador Identificador
@@ -160,43 +151,20 @@ let generarParser entrada =
             match ex.tipo with
             | Nada -> Error "Se encontró un token huerfano"
 
-            | EspBlanco when esInicioDeLinea ->
-
-                let sigToken = run parserGeneral entrada ex.posFinal
-                match sigToken with
-                | Error _ ->
-                    posActual <- ex.posFinal
-                    extraerToken ()
-                | Exito ex2 ->
-                    if ex2.tipo = NuevaLinea then
-                        posActual <- ex.posFinal
-                        extraerToken ()
-                    else
-                        Error "Error de identación."
-
-            | EspBlanco ->
-                posActual <- ex.posFinal
-                esInicioDeLinea <- false
-                extraerToken ()
-
-            | NuevaLinea ->
-                posActual <- ex.posFinal
-                esInicioDeLinea <- true
-                extraerToken ()
-
             | Indentacion when not esInicioDeLinea ->
-                // Se encontró 4 espacios blancos o un Tab en medio de una linea.
+                printfn "Encontrada indentacion en medio"
+                // Se encontró espacios blancos o un Tab en medio de una linea.
                 posActual <- ex.posFinal
                 extraerToken ()
 
             | Indentacion ->
-                
+
                 let (tipo, sigPos) = sigTokenLuegoDeIdentacion ex.posFinal
                 match tipo with
                 | Nada _ ->
                     posActual <- ex.posFinal
                     resultado
-                | NuevaLinea | EspBlanco ->
+                | NuevaLinea ->
                     identacionSobrante <- []
                     posActual <- sigPos
                     extraerToken ()
@@ -205,6 +173,10 @@ let generarParser entrada =
                     posActual <- sigPos
                     resultado
 
+            | NuevaLinea ->
+                posActual <- ex.posFinal
+                esInicioDeLinea <- true
+                resultado
 
             | _ ->
                 esInicioDeLinea <- false

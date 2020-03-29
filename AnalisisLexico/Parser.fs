@@ -16,7 +16,6 @@ type Token =
     | Numero
     | Texto
     | Operadores
-    | EspBlanco
     | AgrupacionAb
     | AgrupacionCer
     | Nada
