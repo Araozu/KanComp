@@ -22,8 +22,8 @@ type Token =
 
 
 type Exito<'A> = {
-    res: 'A;
-    posInicio: int;
+    res: 'A
+    posInicio: int
     posFinal: int
     tipo: Token
 }

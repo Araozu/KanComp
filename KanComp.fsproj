@@ -8,6 +8,7 @@
   <ItemGroup>
         <Compile Include="AnalisisLexico\Parser.fs" />
         <Compile Include="AnalisisLexico\Gramatica.fs" />
+        <Compile Include="AnalisisSintactico\Expresion.fs" />
         <Compile Include="App.fs" />
     </ItemGroup>
 
