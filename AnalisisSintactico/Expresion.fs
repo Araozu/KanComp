@@ -7,9 +7,22 @@ open AnalisisLexico.Parser
 //  Expresion
 // ===================================
 
-type OperadorExpr = OperadorExpr of Exito<string>
+type Signatura =
+    | Simple of string
+    | Array of Signatura
+    | Tupla of Signatura list
+    | Funcion of Signatura * Signatura
 
-type IdentificadorExpr = IdentificadorExpr of Exito<string>
+
+type OperadorExpr = {
+    signatura: Signatura
+    valor: Exito<string>
+}
+
+type IdentificadorExpr = {
+    signatura: Signatura
+    valor: Exito<string>
+}
 
 type Expresion =
     | IdentificadorExpr of IdentificadorExpr
