@@ -9,6 +9,8 @@
         <Compile Include="AnalisisLexico\Parser.fs" />
         <Compile Include="AnalisisLexico\Gramatica.fs" />
         <Compile Include="AnalisisSintactico\Expresion.fs" />
+        <Folder Include="AnalisisSemantico" />
+        <Compile Include="Generacion\Generador.fs" />
         <Compile Include="App.fs" />
     </ItemGroup>
 

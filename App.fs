@@ -2,6 +2,7 @@ module App
 
 open AnalisisLexico.Gramatica
 open AnalisisLexico.Parser
+open Generador
 
 
 let entrada = """
@@ -25,5 +26,6 @@ let rec imprimirTokens () =
 
 [<EntryPoint>]
 let main _ =
-    imprimirTokens ()
+    // imprimirTokens ()
+    mfn ()
     0
