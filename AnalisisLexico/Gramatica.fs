@@ -152,7 +152,6 @@ let generarParser entrada =
             | Nada -> Error "Se encontró un token huerfano"
 
             | Indentacion when not esInicioDeLinea ->
-                printfn "Encontrada indentacion en medio"
                 // Se encontró espacios blancos o un Tab en medio de una linea.
                 posActual <- ex.posFinal
                 extraerToken ()
@@ -192,7 +191,10 @@ let generarParser entrada =
         | [] -> extraerToken ()
 
 
-    extraerTokenHelper
+    let finEntrada () = posActual = entrada.Length
+
+
+    (extraerTokenHelper, finEntrada)
 
 
 

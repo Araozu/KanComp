@@ -2,30 +2,23 @@ module App
 
 open AnalisisLexico.Gramatica
 open AnalisisLexico.Parser
+open AnalisisSintactico.Expresion
 open Generador
 
 
-let entrada = """
-sea a =
-          _
-        20
-"""
-let extraerSigToken = generarParser entrada
+let entrada = "sea mut nombre ="
+
+let funs = generarParser entrada
+let (extraerSigToken, esFinEntrada) = funs
 
 
-let rec imprimirTokens () =
-    let res = extraerSigToken ()
-    match res with
-    | Error err ->
-        printfn "Error al parsear entrada:\n%A" err
-        ()
-    | Exito ex ->
-        printfn "%A" ex
-        imprimirTokens ()
+
+let transpilar () =
+    let expresion = crearExpresion extraerSigToken esFinEntrada
+    printfn "%A" expresion
 
 
 [<EntryPoint>]
 let main _ =
-    // imprimirTokens ()
-    mfn ()
+    transpilar ()
     0
