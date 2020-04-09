@@ -8,6 +8,7 @@ open AnalisisLexico.Parser
 // ===================================
 
 type Signatura =
+    | Indefinida
     | Simple of string
     | Array of Signatura
     | Tupla of Signatura list
@@ -59,16 +60,17 @@ let crearExpresion stream esFinEntrada =
 
     let sigTokenExc tipo valor =
         let res = stream ()
-        match res with
-        | Error err -> failwith err
-        | Exito res ->
-            if res.tipo = tipo then
-                match valor with
-                | None -> res
-                | Some v ->
-                    if res.res = v then res
-                    else failwithf "Se esperaba %s pero se obtuvo %s" v res.res
-            else failwithf "Se esperaba un token de tipo %A pero se obtuvo un %A" tipo res.tipo
+
+        match (res, tipo, valor) with
+        | (Error err, _, _) -> failwith err
+        | (Exito res, None, _) -> res
+        | (Exito res, Some tipo', _) when not (tipo' = res.tipo) ->
+            failwithf "Se esperaba un token de tipo %A pero se obtuvo un %A" tipo' res.tipo
+        | (Exito res, Some tipo', None) when tipo' = res.tipo -> res
+        | (Exito res, Some tipo', Some v) when tipo' = res.tipo ->
+            if res.res = v then res
+            else failwithf "Se esperaba %s pero se obtuvo %s" v res.res
+        | _ -> failwith "Se enviaron datos incorrectos a sigTokenExc."
 
 
     let rec sigExpresion nivel: ExprRes =
@@ -76,18 +78,31 @@ let crearExpresion stream esFinEntrada =
         let sigExprDeclaracion nivel =
 
             try
-                let t2 = sigTokenExc Identificador None
+                let t2 = sigTokenExc (Some Identificador) None
                 let mutable esMutable = false
                 let mutable tokenIdentificador = t2
 
                 if t2.res = "mut" then
                     esMutable <- true
-                    tokenIdentificador <- sigTokenExc Identificador None
+                    tokenIdentificador <- sigTokenExc (Some Identificador) None
                     ()
                     
-                let tAsignacion = sigTokenExc Operadores (Some "=")
-                
-                failwith "No implementado :D"
+                let tAsignacion = sigTokenExc (Some Operadores) (Some "=")
+
+                let tValor = sigExpresion 0
+
+                match tValor with
+                | ErrorExpr err -> tValor
+                | ExitoExpr res ->
+                    ExitoExpr <| DeclaracionExpr {
+                        mut = esMutable
+                        id = {
+                            signatura = Indefinida
+                            valor = tokenIdentificador
+                        }
+                        valor = res
+                    }
+
             with
             | Failure err -> ErrorExpr err
 
@@ -99,6 +114,8 @@ let crearExpresion stream esFinEntrada =
             match token.tipo with
             | Identificador when token.res = "sea" ->
                 sigExprDeclaracion nivel
+            | Numero ->
+                ExitoExpr <| NumeroExpr { token with res = float token.res }
             | _ ->
                 ErrorExpr "No implementado :c"
 
