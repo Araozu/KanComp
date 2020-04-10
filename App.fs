@@ -6,7 +6,7 @@ open AnalisisSintactico.Expresion
 open Generador
 
 
-let entrada = "sea mut nombre = \"Hola\""
+let entrada = "sea mut nombre = 22000"
 
 let funs = generarParser entrada
 let (extraerSigToken, esFinEntrada) = funs

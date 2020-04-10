@@ -115,7 +115,12 @@ let crearExpresion stream esFinEntrada =
             | Identificador when token.res = "sea" ->
                 sigExprDeclaracion nivel
             | Numero ->
-                ExitoExpr <| NumeroExpr { token with res = float token.res }
+                ExitoExpr <| NumeroExpr {
+                    res = float token.res
+                    posInicio = token.posInicio
+                    posFinal = token.posFinal
+                    tipo = token.tipo
+                }
             | _ ->
                 ErrorExpr "No implementado :c"
 
