@@ -25,6 +25,7 @@ type IdentificadorExpr = {
     valor: Exito<string>
 }
 
+
 type Expresion =
     | IdentificadorExpr of IdentificadorExpr
     | Unidad of Exito<string>
@@ -33,8 +34,15 @@ type Expresion =
     | BoolExpr of Exito<bool>
     | OperadorExpr of OperadorExpr
     | OperadorAplExpr of OperadorApl
+    | FuncionExpr of FuncionExpr
     | DeclaracionExpr of Declaracion
     | Modulo of Expresion list
+
+and FuncionExpr = {
+    signatura: Signatura
+    funcion: Expresion
+    parametro: Expresion
+}
 
 
 and OperadorApl = {
@@ -75,6 +83,81 @@ let crearExpresion stream esFinEntrada =
 
     let rec sigExpresion nivel: ExprRes =
 
+        let rec sigExprFuncion nivel exprFun =
+            try
+                let t2 = sigTokenExc None None
+                match t2.tipo with
+                | Identificador | Numero | Texto ->
+                    let expresionParametro =
+                        match t2.tipo with
+                        | Identificador ->
+                            IdentificadorExpr {
+                                signatura = Indefinida
+                                valor     = t2
+                            }
+                        | Numero ->
+                            NumeroExpr {
+                                res = float t2.res
+                                posInicio = t2.posInicio
+                                posFinal = t2.posFinal
+                                tipo = t2.tipo
+                            }
+                        | Texto -> TextoExpr t2
+                        | _ -> failwith "Error imposible. Otro tipo de dato se coló."
+
+                    sigExprFuncion nivel {
+                        signatura = Indefinida 
+                        funcion   = FuncionExpr exprFun
+                        parametro = expresionParametro
+                    }
+
+                | NuevaLinea -> ExitoExpr <| FuncionExpr exprFun
+                | _ -> ErrorExpr "No implementado (Funcion)"
+                
+            with
+            | Failure err -> ErrorExpr err
+
+
+        let sigExprIdentificador nivel token =
+            try
+                let t2 = sigTokenExc None None
+                match t2.tipo with
+                | Identificador | Numero | Texto ->
+                    let expresionParametro =
+                        match t2.tipo with
+                        | Identificador ->
+                            IdentificadorExpr {
+                                signatura = Indefinida
+                                valor     = t2
+                            }
+                        | Numero ->
+                            NumeroExpr {
+                                res = float t2.res
+                                posInicio = t2.posInicio
+                                posFinal = t2.posFinal
+                                tipo = t2.tipo
+                            }
+                        | Texto -> TextoExpr t2
+                        | _ -> failwith "Error imposible. Otro tipo de dato se coló."
+
+                    sigExprFuncion nivel {
+                        signatura = Indefinida 
+                        funcion   = IdentificadorExpr {
+                            signatura = Indefinida
+                            valor     = token
+                        }
+                        parametro = expresionParametro
+                    }
+                | NuevaLinea ->
+                    ExitoExpr <| IdentificadorExpr {
+                        signatura = Indefinida
+                        valor     = token
+                    }
+                | _ -> ErrorExpr "No implementado (Identificador)"
+            with
+            | Failure err -> ErrorExpr err
+
+
         let sigExprDeclaracion nivel =
 
             try
@@ -114,6 +197,8 @@ let crearExpresion stream esFinEntrada =
             match token.tipo with
             | Identificador when token.res = "sea" ->
                 sigExprDeclaracion nivel
+            | Identificador ->
+                sigExprIdentificador nivel token
             | Numero ->
                 ExitoExpr <| NumeroExpr {
                     res = float token.res
@@ -121,7 +206,7 @@ let crearExpresion stream esFinEntrada =
                     posFinal = token.posFinal
                     tipo = token.tipo
                 }
-            | _ ->
+             | _ ->
                 ErrorExpr "No implementado :c"
 
     let mutable expresiones = []
