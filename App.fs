@@ -15,6 +15,16 @@ let funs = generarParser entrada
 let (extraerSigToken, esFinEntrada) = funs
 
 
+let rec repl () =
+    printf "> "
+    let entrada = System.Console.ReadLine ()
+    if entrada = ":s" then ()
+    else
+        let (streamFun, esFinEntrada) = generarParser <| entrada + "\n"
+        let expresion = crearExpresion streamFun esFinEntrada
+        printfn "%A" expresion
+        repl ()
+
 
 let transpilar () =
     let expresion = crearExpresion extraerSigToken esFinEntrada
@@ -23,5 +33,5 @@ let transpilar () =
 
 [<EntryPoint>]
 let main _ =
-    transpilar ()
+    repl ()
     0
