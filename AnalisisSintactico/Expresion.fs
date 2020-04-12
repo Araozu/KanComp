@@ -87,6 +87,18 @@ let crearExpresion stream esFinEntrada =
             try
                 let t2 = sigTokenExc None None
                 match t2.tipo with
+                | Identificador when t2.res = "true" || t2.res = "false" ->
+                    sigExprFuncion nivel {
+                        signatura = Indefinida 
+                        funcion   = FuncionExpr exprFun
+                        parametro = BoolExpr {
+                            res       = t2.res = "true"
+                            posInicio = t2.posInicio
+                            posFinal  = t2.posFinal
+                            tipo      = t2.tipo
+                        }
+                    }
+
                 | Identificador | Numero | Texto ->
                     let expresionParametro =
                         match t2.tipo with
@@ -122,6 +134,18 @@ let crearExpresion stream esFinEntrada =
             try
                 let t2 = sigTokenExc None None
                 match t2.tipo with
+                | Identificador when t2.res = "true" || t2.res = "false" ->
+                    let t3 = sigTokenExc None None
+                    match t3.tipo with
+                    | NuevaLinea ->
+                        ExitoExpr <| BoolExpr {
+                            res       = t3.res = "true"
+                            posInicio = t3.posInicio
+                            posFinal  = t3.posFinal
+                            tipo      = t3.tipo
+                        }
+                    | _ -> failwith "Token luego de bool no implementado."
+                        
                 | Identificador | Numero | Texto ->
                     let expresionParametro =
                         match t2.tipo with

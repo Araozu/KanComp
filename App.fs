@@ -7,7 +7,7 @@ open Generador
 
 
 let entrada = """
-sea  hola = imprimir nombre
+sea resultado = repetir "Hola" 10 true
 
 """
 
