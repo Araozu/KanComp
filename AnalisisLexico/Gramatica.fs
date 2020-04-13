@@ -122,6 +122,117 @@ let internal parserGeneral = parseVariasOpciones [
 ]
 
 
+type ResLexer =
+    | Token of Token2
+    | PClave of PClave
+    | ErrorLexer of string
+    | EOF
+
+
+type Lexer(entrada) =
+    
+    let mutable esInicioDeLinea = true
+    let mutable posActual = 0
+    let mutable indentacionActual = 0
+
+    let rec sigTokenLuegoDeIdentacion posActual =
+        let sigToken = run parserGeneral entrada posActual
+        match sigToken with
+        | Error _ -> (Nada, -1)
+        | Exito ex ->
+            match ex.tipo with
+            | Indentacion ->
+                sigTokenLuegoDeIdentacion ex.posFinal
+            | _ -> (ex.tipo, posActual)
+
+
+    let rec extraerToken (): ResLexer =
+        let resultado = run parserGeneral entrada posActual
+
+        match resultado with
+        | Error err -> ErrorLexer err
+        | Exito ex ->
+
+            let opComun () =
+                esInicioDeLinea <- false
+                posActual <- ex.posFinal
+                ()
+
+            let crearToken2 tipo valor =
+                opComun ()
+
+                Token <| tipo {
+                    valor       = valor
+                    inicio      = ex.posInicio
+                    final       = ex.posFinal
+                    indentacion = indentacionActual
+                }
+
+            match ex.tipo with
+            | Nada -> ErrorLexer "Se encontró un token huerfano"
+
+            | Indentacion when not esInicioDeLinea ->
+                // Se encontró espacios blancos o un Tab en medio de una linea.
+                posActual <- ex.posFinal
+                extraerToken ()
+
+            | Indentacion ->
+
+                let (tipo, sigPos) = sigTokenLuegoDeIdentacion ex.posFinal
+                match tipo with
+                | Nada _ ->
+                    ErrorLexer "Se encontró un token invalido (Nada)"
+                | NuevaLinea ->
+                    posActual <- sigPos
+                    indentacionActual <- 0
+
+                    extraerToken ()
+                | _ ->
+                    posActual <- ex.posFinal
+                    posActual <- sigPos
+                    indentacionActual <- sigPos - ex.posInicio
+                    extraerToken ()
+
+            | NuevaLinea ->
+                let resultado = Token <| TNuevaLinea {
+                    valor       = ()
+                    inicio      = ex.posInicio
+                    final       = ex.posFinal
+                    indentacion = indentacionActual
+                }
+                posActual <- ex.posFinal
+                esInicioDeLinea <- true
+                indentacionActual <- 0
+                resultado
+
+            // TODO: Crear tokens para palabras clave.
+            | Identificador when ex.res = "true" || ex.res = "false" ->
+                crearToken2 TBool (ex.res = "true")
+            | Identificador | IdentificadorTipo ->
+                crearToken2 TIdentificador ex.res
+            | Generico ->
+                crearToken2 TGenerico ex.res
+            | Comentario ->
+                crearToken2 TComentario ex.res
+            | Numero ->
+                crearToken2 TNumero (float ex.res)
+            | Texto ->
+                crearToken2 TTexto ex.res
+            | Operadores ->
+                crearToken2 TOperador ex.res
+            | AgrupacionAb ->
+                crearToken2 TAgrupAb ex.res
+            | AgrupacionCer ->
+                crearToken2 TAgrupCer ex.res
+
+
+    member this.Entrada = entrada
+
+    member this.SigToken () = extraerToken ()
+
+    member this.HayTokens () = posActual = entrada.Length
+
+
 
 // TODO: Diferenciar entre errores normales y errores por EOF
 let generarParser entrada =

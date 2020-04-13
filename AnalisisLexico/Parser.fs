@@ -29,6 +29,33 @@ type Exito<'A> = {
 }
 
 
+type InfoToken<'A> = {
+    valor:      'A
+    inicio:   int
+    final:    int
+    indentacion: int
+}
+
+
+type Token2 =
+    | TNuevaLinea of InfoToken<unit>
+    | TIdentificador of InfoToken<string>
+    | TGenerico of InfoToken<string>
+    | TComentario of InfoToken<string>
+    | TNumero of InfoToken<float>
+    | TTexto of InfoToken<string>
+    | TBool of InfoToken<bool>
+    | TOperador of InfoToken<string>
+    | TAgrupAb of InfoToken<string>
+    | TAgrupCer of InfoToken<string>
+    | TNada
+
+
+type PClave =
+    | SEA of InfoToken<string>
+    | MUT of InfoToken<string>
+
+
 type Resultado<'A> =
     | Exito of Exito<'A>
     | Error of string
