@@ -6,9 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-        <Compile Include="AnalisisLexico\Parser.fs" />
+        <Compile Include="AnalisisLexico\Lexer.fs" />
         <Compile Include="AnalisisLexico\Gramatica.fs" />
         <Compile Include="AnalisisSintactico\Expresion.fs" />
+        <Content Include="AnalisisSintactico\gramatica.ebnf" />
+        <Compile Include="AnalisisSintactico\Parser.fs" />
         <Folder Include="AnalisisSemantico" />
         <Compile Include="Generacion\Generador.fs" />
         <Compile Include="App.fs" />

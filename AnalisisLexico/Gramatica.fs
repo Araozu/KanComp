@@ -1,6 +1,6 @@
 module AnalisisLexico.Gramatica
 
-open Parser
+open Lexer
 
 
 let internal operadores = [ '+'; '-'; '='; '*'; '!'; '\\'; '/'; '''; '|'; '@'; '#'; '·'; '$'; '~'; '%'; '¦'; '&'; '?'; '¿'; '¡'; '<'; '>'; '€'; '^'; '-'; '.'; ':'; ','; ';' ]

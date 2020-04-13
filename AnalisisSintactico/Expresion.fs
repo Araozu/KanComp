@@ -1,7 +1,7 @@
 module AnalisisSintactico.Expresion
 
 open System
-open AnalisisLexico.Parser
+open AnalisisLexico.Lexer
 
 // ===================================
 //  Expresion

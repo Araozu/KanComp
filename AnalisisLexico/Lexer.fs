@@ -1,4 +1,4 @@
-module AnalisisLexico.Parser
+module AnalisisLexico.Lexer
 
 open System
 
@@ -30,9 +30,9 @@ type Exito<'A> = {
 
 
 type InfoToken<'A> = {
-    valor:      'A
-    inicio:   int
-    final:    int
+    valor:       'A
+    inicio:      int
+    final:       int
     indentacion: int
 }
 

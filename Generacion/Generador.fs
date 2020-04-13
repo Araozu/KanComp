@@ -1,6 +1,6 @@
 module Generador
 
-open AnalisisLexico.Parser
+open AnalisisLexico.Lexer
 open AnalisisSintactico.Expresion
 
 
