@@ -49,11 +49,8 @@ type Token2 =
     | TAgrupAb of InfoToken<string>
     | TAgrupCer of InfoToken<string>
     | TNada
-
-
-type PClave =
-    | SEA of InfoToken<string>
-    | MUT of InfoToken<string>
+    | PC_SEA of InfoToken<string>
+    | PC_MUT of InfoToken<string>
 
 
 type Resultado<'A> =

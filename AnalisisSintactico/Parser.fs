@@ -1,6 +1,7 @@
 module AnalisisSintactico.Parser
 
 open AnalisisLexico.Lexer
+open AnalisisLexico.Gramatica
 
 
 // ===================================
@@ -45,7 +46,7 @@ and EDeclaracion = {
 
 and Expresion =
     | EIdentificador of EIdentificador
-    | EUnidad
+    | EUnidad of Token2
     | ENumero of Token2
     | ETexto of Token2
     | EBool of Token2
@@ -56,3 +57,31 @@ and Expresion =
     | EModulo of Expresion list
 
 
+type ExprRes =
+    | ErrorExpr of string
+    | ExitoExpr of Expresion
+    | EOF
+
+
+type RLexer =
+    | RToken of Token2
+    | EOF
+
+
+let parseTokens (lexer: Lexer) =
+
+    let sigTokenExc () : RLexer =
+        let res = lexer.SigToken ()
+
+        match res with
+        | ResLexer.EOF -> RLexer.EOF
+        | ErrorLexer err -> failwith err
+        | Token t -> RToken t
+
+    let rec sigExpresion nivel =
+        ()
+
+
+    
+    
+    ()

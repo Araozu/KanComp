@@ -124,7 +124,6 @@ let internal parserGeneral = parseVariasOpciones [
 
 type ResLexer =
     | Token of Token2
-    | PClave of PClave
     | ErrorLexer of string
     | EOF
 
