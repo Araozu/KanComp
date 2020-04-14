@@ -222,9 +222,17 @@ type Lexer(entrada: string) =
             | Operadores ->
                 crearToken2 TOperador ex.res
             | AgrupacionAb ->
-                crearToken2 TAgrupAb ex.res
+                match ex.res with
+                | "(" ->
+                    crearToken2 TParenAb ex.res
+                | _ ->
+                    crearToken2 TAgrupAb ex.res
             | AgrupacionCer ->
-                crearToken2 TAgrupCer ex.res
+                match ex.res with
+                | ")" ->
+                    crearToken2 TParenCer ex.res
+                | _ ->
+                    crearToken2 TAgrupCer ex.res
 
 
     member this.Entrada = entrada

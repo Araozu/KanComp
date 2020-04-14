@@ -46,6 +46,8 @@ type Token2 =
     | TTexto of InfoToken<string>
     | TBool of InfoToken<bool>
     | TOperador of InfoToken<string>
+    | TParenAb of InfoToken<string>  // Parentesis abierto
+    | TParenCer of InfoToken<string> // Parentesis cerrado
     | TAgrupAb of InfoToken<string>
     | TAgrupCer of InfoToken<string>
     | TNada
