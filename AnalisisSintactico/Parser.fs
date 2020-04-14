@@ -17,12 +17,12 @@ type Signatura =
 
 type EIdentificador = {
     signatura: Signatura
-    valor: Token2
+    valor: InfoToken<string>
 }
 
 and EOperador = {
     signatura: Signatura
-    valor: Exito<string>
+    valor: InfoToken<string>
 }
 
 and EOperadorApl = {
@@ -46,11 +46,11 @@ and EDeclaracion = {
 
 and Expresion =
     | EIdentificador of EIdentificador
-    | EUnidad of Token2
-    | ENumero of Token2
-    | ETexto of Token2
-    | EBool of Token2
-    | EOperador of EOperador
+    | EUnidad
+    | ENumero of InfoToken<float>
+    | ETexto of InfoToken<string>
+    | EBool of InfoToken<bool>
+    | EOperador of InfoToken<string>
     | EOperadorApl of EOperadorApl
     | EFuncion of EFuncion
     | EDeclaracion of EDeclaracion
@@ -58,30 +58,48 @@ and Expresion =
 
 
 type ExprRes =
-    | ErrorExpr of string
-    | ExitoExpr of Expresion
-    | EOF
+    | ER_Exito of Expresion
+    | ER_Error of string
+    | ER_EOF
 
-
-type RLexer =
-    | RToken of Token2
-    | EOF
+type ResParser =
+    | ExitoParser of Expresion
+    | ErrorParser of string
 
 
 let parseTokens (lexer: Lexer) =
 
-    let sigTokenExc () : RLexer =
-        let res = lexer.SigToken ()
-
-        match res with
-        | ResLexer.EOF -> RLexer.EOF
-        | ErrorLexer err -> failwith err
-        | Token t -> RToken t
-
     let rec sigExpresion nivel =
-        ()
+
+        let resultado = lexer.SigToken ()
+        match resultado with
+        | EOF -> ER_EOF
+        | ErrorLexer err -> ER_Error err
+        | Token token ->
+            match token with
+            (*
+            | Identificador when token.res = "sea" ->
+                sigExprDeclaracion nivel
+            *
+            | Identificador ->
+                sigExprIdentificador nivel token
+            *)
+            | TNumero infoNumero ->
+                ER_Exito (ENumero infoNumero)
+            | _ ->
+                ER_Error "No implementado :c"
 
 
-    
-    
-    ()
+    try
+        let mutable expresiones = []
+        while lexer.HayTokens () do
+            let expr' = sigExpresion 0
+            match expr' with
+            | ER_Error err -> failwith err
+            | ER_Exito expr ->
+                expresiones <- expresiones @ [expr]
+            | ER_EOF -> ()
+
+        ExitoParser <| EModulo expresiones
+    with
+    | Failure err -> ErrorParser err

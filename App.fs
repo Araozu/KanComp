@@ -3,6 +3,7 @@ module App
 open AnalisisLexico.Gramatica
 open AnalisisLexico.Lexer
 open AnalisisSintactico.Expresion
+open AnalisisSintactico.Parser
 open Generador
 
 
@@ -14,14 +15,13 @@ sea resultado = repetir "Hola" 10 true
 let funs = generarParser entrada
 let (extraerSigToken, esFinEntrada) = funs
 
-
 let rec repl () =
     printf "> "
     let entrada = System.Console.ReadLine ()
     if entrada = ":s" then ()
     else
-        let (streamFun, esFinEntrada) = generarParser <| entrada + "\n"
-        let expresion = crearExpresion streamFun esFinEntrada
+        let lexer = new Lexer (entrada)
+        let expresion = parseTokens lexer
         printfn "%A" expresion
         repl ()
 

@@ -128,8 +128,9 @@ type ResLexer =
     | EOF
 
 
-type Lexer(entrada) =
-    
+type Lexer(entrada: string) =
+
+    let tamanoEntrada = entrada.Length
     let mutable esInicioDeLinea = true
     let mutable posActual = 0
     let mutable indentacionActual = 0
@@ -146,6 +147,7 @@ type Lexer(entrada) =
 
 
     let rec extraerToken (): ResLexer =
+        if posActual >= tamanoEntrada then EOF else
         let resultado = run parserGeneral entrada posActual
 
         match resultado with
@@ -229,7 +231,7 @@ type Lexer(entrada) =
 
     member this.SigToken () = extraerToken ()
 
-    member this.HayTokens () = posActual = entrada.Length
+    member this.HayTokens () = posActual < entrada.Length
 
 
 
