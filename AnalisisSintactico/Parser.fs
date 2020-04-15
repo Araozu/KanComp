@@ -117,7 +117,7 @@ let parseTokens (lexer: Lexer) =
         match (sigExprActual, lexer.LookAhead ()) with
         | (ER_EOF, _) -> sigExprActual
         | (ER_Error _, _) -> sigExprActual
-        | (ER_Exito _, EOF) -> ER_EOF
+        | (ER_Exito _, EOF) -> sigExprActual
         | (ER_Exito _, ErrorLexer err) -> ER_Error err
         | (ER_Exito exprAct, Token (token, indentacion2)) ->
             if indentacion2 = nivel then
@@ -136,16 +136,9 @@ let parseTokens (lexer: Lexer) =
             
 
 
-    try
-        let mutable expresiones = []
-        while lexer.HayTokens () do
-            let expr' = sigExpresion 0
-            match expr' with
-            | ER_Error err -> failwith err
-            | ER_Exito expr ->
-                expresiones <- expresiones @ [expr]
-            | ER_EOF -> ()
+    let expr' = sigExpresion 0
+    match expr' with
+    | ER_Error err -> ErrorParser err
+    | ER_Exito expr -> ExitoParser expr
+    | ER_EOF -> ErrorParser "EOF sin tratar en el parser."
 
-        ExitoParser <| EBloque expresiones
-    with
-    | Failure err -> ErrorParser err
