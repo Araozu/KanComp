@@ -7,14 +7,6 @@ open AnalisisSintactico.Parser
 open Generador
 
 
-let entrada = """
-sea resultado = repetir "Hola" 10 true
-
-"""
-
-let funs = generarParser entrada
-let (extraerSigToken, esFinEntrada) = funs
-
 let rec repl () =
     printf "> "
     let entrada = System.Console.ReadLine ()
@@ -25,13 +17,31 @@ let rec repl () =
         printfn "%A" expresion
         repl ()
 
-
-let transpilar () =
-    let expresion = crearExpresion extraerSigToken esFinEntrada
-    printfn "%A" expresion
+(*
+    Uso:
+    --help | -h       Muestra esta informacion
+    --repl            Inicia el REPL
+    --compile <FILE>  Compila el archivo FILE, imprime el resultado en stdout.
+*)
 
 
 [<EntryPoint>]
-let main _ =
-    repl ()
+let main parametros =
+    try
+        let comando = parametros.[0]
+        match comando with
+        | "--repl" ->
+            repl ()
+        | "--compile" ->
+            let direccion = parametros.[1]
+            printfn "TODO (%s)" direccion
+        | "--help" | "-h" ->
+            printfn """
+            Uso:
+            --help | -h       Muestra esta informacion
+            --repl            Inicia el REPL
+            --compile <FILE>  Compila el archivo FILE, imprime el resultado en stdout.
+            """
+    with
+    | _ -> eprintfn "Parametro incorrecto. Usa --help para obtener ayuda."
     0

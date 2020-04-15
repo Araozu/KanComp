@@ -123,7 +123,7 @@ let internal parserGeneral = parseVariasOpciones [
 
 
 type ResLexer =
-    | Token of Token2
+    | Token of Token2 * int
     | ErrorLexer of string
     | EOF
 
@@ -134,6 +134,7 @@ type Lexer(entrada: string) =
     let mutable esInicioDeLinea = true
     let mutable posActual = 0
     let mutable indentacionActual = 0
+    let mutable lookAhead: ResLexer option = None
 
     let rec sigTokenLuegoDeIdentacion posActual =
         let sigToken = run parserGeneral entrada posActual
@@ -162,12 +163,11 @@ type Lexer(entrada: string) =
             let crearToken2 tipo valor =
                 opComun ()
 
-                Token <| tipo {
+                Token <| (tipo {
                     valor       = valor
                     inicio      = ex.posInicio
                     final       = ex.posFinal
-                    indentacion = indentacionActual
-                }
+                }, indentacionActual)
 
             match ex.tipo with
             | Nada -> ErrorLexer "Se encontró un token huerfano"
@@ -195,12 +195,11 @@ type Lexer(entrada: string) =
                     extraerToken ()
 
             | NuevaLinea ->
-                let resultado = Token <| TNuevaLinea {
+                let resultado = Token <| (TNuevaLinea {
                     valor       = ()
                     inicio      = ex.posInicio
                     final       = ex.posFinal
-                    indentacion = indentacionActual
-                }
+                }, indentacionActual)
                 posActual <- ex.posFinal
                 esInicioDeLinea <- true
                 indentacionActual <- 0
@@ -237,7 +236,21 @@ type Lexer(entrada: string) =
 
     member this.Entrada = entrada
 
-    member this.SigToken () = extraerToken ()
+    member this.SigToken () =
+        match lookAhead with
+        | Some token ->
+            lookAhead <- None
+            token
+        | None ->
+            extraerToken ()
+
+    member this.LookAhead () =
+        match lookAhead with
+        | Some token -> token
+        | None ->
+            let sigToken = this.SigToken ()
+            lookAhead <- Some sigToken
+            sigToken
 
     member this.HayTokens () = posActual < entrada.Length
 

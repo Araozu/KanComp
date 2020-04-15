@@ -54,7 +54,7 @@ and Expresion =
     | EOperadorApl of EOperadorApl
     | EFuncion of EFuncion
     | EDeclaracion of EDeclaracion
-    | EModulo of Expresion list
+    | EBloque of Expresion list
 
 
 type ExprRes =
@@ -72,45 +72,68 @@ let parseTokens (lexer: Lexer) =
     let rec sigExpresion nivel =
 
         let resultado = lexer.SigToken ()
-        match resultado with
-        | EOF -> ER_EOF
-        | ErrorLexer err -> ER_Error err
-        | Token token ->
-            match token with
-            (*
-            | Identificador when token.res = "sea" ->
-                sigExprDeclaracion nivel
-            *
-            | Identificador ->
-                sigExprIdentificador nivel token
-            *)
-            | TComentario _ -> sigExpresion nivel
-            | TNumero infoNumero ->
-                ER_Exito (ENumero infoNumero)
-            | TTexto infoTexto ->
-                ER_Exito (ETexto infoTexto)
-            | TBool infoBool ->
-                ER_Exito (EBool infoBool)
-            | TParenAb infoParen ->
-                let sigToken = sigExpresion nivel
-                match sigToken with
-                | ER_Error _ -> sigToken
-                | ER_EOF ->
-                    ER_Error <| sprintf "El parentesis abierto en %i no está cerrado." infoParen.inicio
-                | ER_Exito sigToken' ->
-                    let ultimoToken = lexer.SigToken ()
-                    match ultimoToken with
-                    | EOF ->
-                        ER_Error <| sprintf "El parentesis abierto en %i contiene una expresion, pero no está cerrado." infoParen.inicio
-                    | ErrorLexer error ->
-                        ER_Error <| sprintf "El parentesis abierto en %i no está cerrado debido a un error léxico: %s" infoParen.inicio error
-                    | Token ultimoToken' ->
-                        match ultimoToken' with
-                        | TParenCer _ -> ER_Exito sigToken'
-                        | _ ->
-                            ER_Error <| sprintf "Se esperaba un cierre de parentesis."
-            | _ ->
-                ER_Error "No implementado :c"
+
+        let sigExprActual = 
+            match resultado with
+            | EOF -> ER_EOF
+            | ErrorLexer err -> ER_Error err
+            | Token (token, identacion) ->
+                match token with
+                    (*
+                    | Identificador when token.res = "sea" ->
+                        sigExprDeclaracion nivel
+                    *
+                    | Identificador ->
+                        sigExprIdentificador nivel token
+                    *)
+                    | TComentario _ -> sigExpresion nivel
+                    | TNumero infoNumero ->
+                        ER_Exito (ENumero infoNumero)
+                    | TTexto infoTexto ->
+                        ER_Exito (ETexto infoTexto)
+                    | TBool infoBool ->
+                        ER_Exito (EBool infoBool)
+                    | TParenAb infoParen ->
+                        let sigToken = sigExpresion nivel
+                        match sigToken with
+                        | ER_Error _ -> sigToken
+                        | ER_EOF ->
+                            ER_Error <| sprintf "El parentesis abierto en %i no está cerrado." infoParen.inicio
+                        | ER_Exito sigToken' ->
+                            let ultimoToken = lexer.SigToken ()
+                            match ultimoToken with
+                            | EOF ->
+                                ER_Error <| sprintf "El parentesis abierto en %i contiene una expresion, pero no está cerrado." infoParen.inicio
+                            | ErrorLexer error ->
+                                ER_Error <| sprintf "El parentesis abierto en %i no está cerrado debido a un error léxico: %s" infoParen.inicio error
+                            | Token (ultimoToken', indentacion2) ->
+                                match ultimoToken' with
+                                | TParenCer _ -> ER_Exito sigToken'
+                                | _ ->
+                                    ER_Error <| sprintf "Se esperaba un cierre de parentesis."
+                    | _ ->
+                        ER_Error "No implementado :c"
+
+        match (sigExprActual, lexer.LookAhead ()) with
+        | (ER_EOF, _) -> sigExprActual
+        | (ER_Error _, _) -> sigExprActual
+        | (ER_Exito _, EOF) -> ER_EOF
+        | (ER_Exito _, ErrorLexer err) -> ER_Error err
+        | (ER_Exito exprAct, Token (token, indentacion2)) ->
+            if indentacion2 = nivel then
+                let sigExprTop = sigExpresion nivel
+                match sigExprTop with
+                | ER_Error err -> ER_Error err
+                | ER_EOF -> sigExprActual
+                | ER_Exito expr ->
+                    ER_Exito <| match expr with
+                                | EBloque exprs ->
+                                    EBloque <| exprAct :: exprs
+                                | _ ->
+                                    EBloque <| [exprAct; expr]
+            else
+                sigExprActual
+            
 
 
     try
@@ -123,6 +146,6 @@ let parseTokens (lexer: Lexer) =
                 expresiones <- expresiones @ [expr]
             | ER_EOF -> ()
 
-        ExitoParser <| EModulo expresiones
+        ExitoParser <| EBloque expresiones
     with
     | Failure err -> ErrorParser err

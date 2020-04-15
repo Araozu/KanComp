@@ -33,7 +33,6 @@ type InfoToken<'A> = {
     valor:       'A
     inicio:      int
     final:       int
-    indentacion: int
 }
 
 
