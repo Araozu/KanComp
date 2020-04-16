@@ -119,7 +119,7 @@ let parseTokens (lexer: Lexer) =
         | (ER_Error _, _) -> sigExprActual
         | (ER_Exito _, EOF) -> sigExprActual
         | (ER_Exito _, ErrorLexer err) -> ER_Error err
-        | (ER_Exito exprAct, Token (token, indentacion2)) ->
+        | (ER_Exito exprAct, Token (_, indentacion2)) ->
             if indentacion2 = nivel then
                 let sigExprTop = sigExpresion nivel
                 match sigExprTop with
@@ -133,7 +133,7 @@ let parseTokens (lexer: Lexer) =
                                     EBloque <| [exprAct; expr]
             else
                 sigExprActual
-            
+
 
 
     let expr' = sigExpresion 0

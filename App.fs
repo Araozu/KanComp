@@ -40,8 +40,10 @@ let main parametros =
             Uso:
             --help | -h       Muestra esta informacion
             --repl            Inicia el REPL
-            --compile <FILE>  Compila el archivo FILE, imprime el resultado en stdout.
+            --compile <FILE>  Compila el archivo FILE, imprime el resultado en stdout
             """
+        | _ ->
+            printfn "Comando invalido. Usa --help para obtener ayuda."
     with
     | _ -> eprintfn "Parametro incorrecto. Usa --help para obtener ayuda."
     0
