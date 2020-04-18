@@ -14,7 +14,11 @@ let rec repl () =
     else
         let lexer = new Lexer (entrada)
         let expresion = parseTokens lexer
-        printfn "%A" expresion
+        // printfn "%A" expresion
+        match expresion with
+        | ErrorParser err -> eprintfn "%s" err
+        | ExitoParser expr ->
+            printfn "%s" <| generarJs expr true
         repl ()
 
 (*
