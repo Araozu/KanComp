@@ -206,10 +206,13 @@ type Lexer(entrada: string) =
                 resultado
 
             // TODO: Crear tokens para palabras clave.
-            | Identificador when ex.res = "true" || ex.res = "false" ->
-                crearToken2 TBool (ex.res = "true")
             | Identificador | IdentificadorTipo ->
-                crearToken2 TIdentificador ex.res
+                match ex.res with
+                | "true" -> crearToken2 TBool true
+                | "false" -> crearToken2 TBool false
+                | "sea" -> crearToken2 PC_SEA "sea"
+                | "mut" -> crearToken2 PC_MUT "mut"
+                | _ -> crearToken2 TIdentificador ex.res
             | Generico ->
                 crearToken2 TGenerico ex.res
             | Comentario ->
