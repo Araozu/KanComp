@@ -1,57 +1,69 @@
 module Generador
 
 open AnalisisLexico.Lexer
-open AnalisisSintactico.Expresion
+open AnalisisSintactico.Parser
 
 
-let exprEjm = DeclaracionExpr {
-    mut = false
+let exprEjm = EBloque [EDeclaracion {
+    mut = true
     id = {
         signatura = Simple "Txt"
         valor = {
-            res = "hola"
-            posInicio = 0
-            posFinal = 4
-            tipo = Nada
+            valor = "hola"
+            inicio = 0
+            final = 4
         }
     }
-    valor = NumeroExpr {
-        res = 322.0
-        posInicio = 6
-        posFinal = 10
-        tipo = Texto
+    valor = ENumero {
+        valor = 322.0
+        inicio = 6
+        final = 10
     }
-}
+}]
 
 
-let rec generarJs (expr: Expresion) =
+let rec generarJs (expr: Expresion) toplevel =
     
-    let generarNumeroExpr valor = valor.res.ToString()
+    let generarJS_ENumero (info: InfoToken<float>) = info.valor.ToString()
 
-    let generarTextoExpr valor = "\"" + valor.res + "\""
+    let generarJS_ETexto (info: InfoToken<string>) = "\"" + info.valor + "\""
 
-    let generarBoolExpr valor = valor.res.ToString()
+    let generarJS_EBool (info: InfoToken<bool>) = info.valor.ToString()
 
-    let generarIdentificadorExpr (v: IdentificadorExpr) = v.valor.res
+    let generarJS_EIdentificador (identificador: EIdentificador) =
+        identificador.valor.valor
 
-    let generarDeclaracionExpr dec =
+    let generarJS_EDeclaracion dec =
         let inicio = if dec.mut then "let" else "const"
-        let id = generarIdentificadorExpr dec.id
-        let valor = generarJs dec.valor
+        let id = generarJS_EIdentificador dec.id
+        let valor = generarJs dec.valor false
         inicio + " " + id + " = " + valor + ";"
+
+    let generarJS_EBloque exprs toplevel =
+
+        let rec generarInner exprs =
+            match exprs with
+            | [] -> ""
+            | e :: [] ->
+                if toplevel then
+                    generarJs e false
+                else
+                    "return " + generarJs e false
+            | e :: es ->
+                generarJs e false + "\n\n" + generarInner es 
+
+        generarInner exprs
 
 
     match expr with
-    | IdentificadorExpr v -> generarIdentificadorExpr v
-    | Unidad _ -> "undefined"
-    | NumeroExpr v -> generarNumeroExpr v
-    | TextoExpr v -> generarTextoExpr v
-    | BoolExpr v -> generarBoolExpr v
-    | DeclaracionExpr dec -> generarDeclaracionExpr dec
+    | EBloque exprs ->
+        generarJS_EBloque exprs toplevel
+    | EUnidad _ -> "undefined"
+    | ENumero infoToken -> generarJS_ENumero infoToken
+    | ETexto info -> generarJS_ETexto info
+    | EBool info -> generarJS_EBool info
+    | EDeclaracion dec -> generarJS_EDeclaracion dec
     | _ -> "/* No implementado :c */"
 
-
-
-
 let mfn () =
-    printfn "%A" <| generarJs exprEjm
+    printfn "%s" <| generarJs exprEjm true

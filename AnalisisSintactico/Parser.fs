@@ -47,7 +47,7 @@ and EDeclaracion = {
 
 and Expresion =
     | EIdentificador of EIdentificador
-    | EUnidad
+    | EUnidad of InfoToken<unit>
     | ENumero of InfoToken<float>
     | ETexto of InfoToken<string>
     | EBool of InfoToken<bool>
