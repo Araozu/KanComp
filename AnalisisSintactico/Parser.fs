@@ -2,6 +2,7 @@ module AnalisisSintactico.Parser
 
 open AnalisisLexico.Lexer
 open AnalisisLexico.Gramatica
+open AnalisisSintactico
 
 
 // ===================================
@@ -71,6 +72,39 @@ let parseTokens (lexer: Lexer) =
 
     let rec sigExpresion nivel =
 
+        let sigExprDeclaracion nivel =
+            try
+                let mutable esMut = false
+                let token2 = lexer.SigToken ()
+                let mutable preTokenId = token2
+                
+                try
+                    let infoTokenMut = Expect.PC_MUT token2 None ""
+                    esMut <- true
+                    preTokenId <- lexer.SigToken()
+                    ()
+                with
+                | _ -> ()
+
+                let infoTokenId = Expect.TIdentificador preTokenId None "Se esperaba un identificador"
+                let infoTokenOpAsign = Expect.TOperador (lexer.SigToken ()) (Some "=") "Se esperaba el operador de asignación '=' luego del indentificador."
+
+                match sigExpresion nivel with
+                | ER_EOF -> ER_Error "Se esperaba una expresión luego de la asignacion."
+                | ER_Error err -> ER_Error err
+                | ER_Exito exprFinal ->
+                    ER_Exito <| EDeclaracion {
+                        mut = esMut
+                        id = {
+                            signatura = Indefinida
+                            valor = infoTokenId
+                        }
+                        valor = exprFinal
+                    }
+                
+            with
+            | Failure err -> ER_Error err
+
         let resultado = lexer.SigToken ()
 
         let sigExprActual = 
@@ -79,6 +113,8 @@ let parseTokens (lexer: Lexer) =
             | ErrorLexer err -> ER_Error err
             | Token (token, identacion) ->
                 match token with
+                    | PC_SEA infoToken ->
+                        sigExprDeclaracion nivel
                     (*
                     | Identificador when token.res = "sea" ->
                         sigExprDeclaracion nivel
