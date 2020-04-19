@@ -89,7 +89,19 @@ let parseTokens (lexer: Lexer) =
                 let infoTokenId = Expect.TIdentificador preTokenId None "Se esperaba un identificador"
                 let infoTokenOpAsign = Expect.TOperador (lexer.SigToken ()) (Some "=") "Se esperaba el operador de asignación '=' luego del indentificador."
 
-                match sigExpresion nivel with
+                let nuevoNivel =
+                    try
+                        let tokenNuevaLinea = Expect.TNuevaLinea (lexer.LookAhead ()) None ""
+                        ignore (lexer.SigToken ())
+                        let (_, nuevaIndentacion) = Expect.Any (lexer.LookAhead ()) "Se esperaba un token indentado luego de la nueva linea."
+                        nuevaIndentacion
+                    with
+                    | _ -> nivel
+
+                if nuevoNivel <= nivel then
+                    failwith "La expresión actual está incompleta. Se esperaba una expresión indentada."
+
+                match sigExpresion nuevoNivel with
                 | ER_EOF -> ER_Error "Se esperaba una expresión luego de la asignacion."
                 | ER_Error err -> ER_Error err
                 | ER_Exito exprFinal ->
@@ -111,6 +123,8 @@ let parseTokens (lexer: Lexer) =
             match resultado with
             | EOF -> ER_EOF
             | ErrorLexer err -> ER_Error err
+            | Token (_, indentacion) when indentacion < nivel ->
+                ER_Error <| sprintf "Error de indentacion. Se esperaba una expresion con %i espacios o más, pero el token encontrado tiene %i espacios." nivel indentacion
             | Token (token, identacion) ->
                 match token with
                     | PC_SEA infoToken ->

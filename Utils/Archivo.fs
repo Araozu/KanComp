@@ -29,9 +29,9 @@ let compilarDesdeArchivo ruta =
     match obtenerStrArchivo ruta with
     | ErrorIO err -> eprintf "%s" err
     | ExitoIO codigo ->
-        printfn "´´´\n%s\n´´´" codigo
         let lexer = new Lexer (codigo)
         let expresion = parseTokens lexer
+        printfn "%A" expresion
         match expresion with
         | ErrorParser err -> eprintfn "%s" err
         | ExitoParser expr ->
