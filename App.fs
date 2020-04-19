@@ -37,8 +37,8 @@ let main parametros =
         | "--repl" ->
             repl ()
         | "--compile" ->
-            let direccion = parametros.[1]
-            printfn "TODO (%s)" direccion
+            let ruta = parametros.[1]
+            Utils.compilarDesdeArchivo ruta
         | "--help" | "-h" ->
             printfn """
             Uso:

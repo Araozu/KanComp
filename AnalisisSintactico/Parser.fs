@@ -147,8 +147,9 @@ let parseTokens (lexer: Lexer) =
                                 | TParenCer _ -> ER_Exito sigToken'
                                 | _ ->
                                     ER_Error <| sprintf "Se esperaba un cierre de parentesis."
+                    | TNuevaLinea _ -> sigExpresion nivel
                     | _ ->
-                        ER_Error "No implementado :c"
+                        ER_Error <| sprintf "%s (%A)" "No implementado :c" token
 
         match (sigExprActual, lexer.LookAhead ()) with
         | (ER_EOF, _) -> sigExprActual

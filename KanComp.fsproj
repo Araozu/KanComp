@@ -11,8 +11,8 @@
         <Compile Include="AnalisisSintactico\Expresion.fs" />
         <Compile Include="AnalisisSintactico\Expectations.fs" />
         <Compile Include="AnalisisSintactico\Parser.fs" />
-        <Folder Include="AnalisisSemantico" />
         <Compile Include="Generacion\Generador.fs" />
+        <Compile Include="Utils\Archivo.fs"/>
         <Compile Include="App.fs" />
     </ItemGroup>
 
