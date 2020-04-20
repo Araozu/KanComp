@@ -49,7 +49,6 @@ type Token2 =
     | TParenCer of InfoToken<string> // Parentesis cerrado
     | TAgrupAb of InfoToken<string>
     | TAgrupCer of InfoToken<string>
-    | TNada
     | PC_SEA of InfoToken<string>
     | PC_MUT of InfoToken<string>
 

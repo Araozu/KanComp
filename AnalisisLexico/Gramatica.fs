@@ -182,7 +182,8 @@ type Lexer(entrada: string) =
                 let (tipo, sigPos) = sigTokenLuegoDeIdentacion ex.posFinal
                 match tipo with
                 | Nada _ ->
-                    ErrorLexer "Se encontró un token invalido (Nada)"
+                    // ErrorLexer "Se encontró un token invalido (Nada)"
+                    EOF
                 | NuevaLinea ->
                     posActual <- sigPos
                     indentacionActual <- 0
@@ -205,7 +206,6 @@ type Lexer(entrada: string) =
                 indentacionActual <- 0
                 resultado
 
-            // TODO: Crear tokens para palabras clave.
             | Identificador | IdentificadorTipo ->
                 match ex.res with
                 | "true" -> crearToken2 TBool true

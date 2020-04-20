@@ -18,7 +18,7 @@ let rec repl () =
         match expresion with
         | ErrorParser err -> eprintfn "%s" err
         | ExitoParser expr ->
-            printfn "%s" <| generarJs expr true
+            printfn "%s" <| generarJs expr true 0
         repl ()
 
 (*
