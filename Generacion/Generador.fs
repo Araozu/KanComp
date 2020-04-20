@@ -4,24 +4,6 @@ open AnalisisLexico.Lexer
 open AnalisisSintactico.Parser
 
 
-let exprEjm = EBloque [EDeclaracion {
-    mut = true
-    id = {
-        signatura = Simple "Txt"
-        valor = {
-            valor = "hola"
-            inicio = 0
-            final = 4
-        }
-    }
-    valor = ENumero {
-        valor = 322.0
-        inicio = 6
-        final = 10
-    }
-}]
-
-
 let rec generarJs (expr: Expresion) toplevel =
     
     let generarJS_ENumero (info: InfoToken<float>) = info.valor.ToString()
@@ -48,11 +30,14 @@ let rec generarJs (expr: Expresion) toplevel =
                 if toplevel then
                     generarJs e false
                 else
-                    "return " + generarJs e false
+                    "return " + generarJs e false + ";"
             | e :: es ->
-                generarJs e false + "\n\n" + generarInner es 
+                generarJs e false + ";\n\n" + generarInner es 
 
-        generarInner exprs
+        if toplevel then
+            generarInner exprs
+        else
+            "(() => {\n" + generarInner exprs + "\n}();"
 
 
     match expr with
@@ -65,5 +50,3 @@ let rec generarJs (expr: Expresion) toplevel =
     | EDeclaracion dec -> generarJS_EDeclaracion dec
     | _ -> "/* No implementado :c */"
 
-let mfn () =
-    printfn "%s" <| generarJs exprEjm true

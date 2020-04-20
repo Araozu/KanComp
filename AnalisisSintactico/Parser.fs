@@ -68,6 +68,18 @@ type ResParser =
     | ErrorParser of string
 
 
+let obtSigIndentacion (lexer: Lexer) =
+    try
+        while true do
+            ignore <| Expect.TNuevaLinea (lexer.LookAhead ()) None ""
+            ignore (lexer.SigToken ())
+        -1
+    with
+    | _ ->
+        let (_, nuevaIndentacion) = Expect.Any (lexer.LookAhead ()) "Se esperaba una expresion luego del signo '='." None
+        nuevaIndentacion
+
+
 let parseTokens (lexer: Lexer) =
 
     let rec sigExpresion nivel =
@@ -89,14 +101,7 @@ let parseTokens (lexer: Lexer) =
                 let infoTokenId = Expect.TIdentificador preTokenId None "Se esperaba un identificador"
                 let infoTokenOpAsign = Expect.TOperador (lexer.SigToken ()) (Some "=") "Se esperaba el operador de asignación '=' luego del indentificador."
 
-                let nuevoNivel =
-                    try
-                        let tokenNuevaLinea = Expect.TNuevaLinea (lexer.LookAhead ()) None ""
-                        ignore (lexer.SigToken ())
-                        let (_, nuevaIndentacion) = Expect.Any (lexer.LookAhead ()) "Se esperaba un token indentado luego de la nueva linea."
-                        nuevaIndentacion
-                    with
-                    | _ -> nivel
+                let nuevoNivel = obtSigIndentacion lexer
 
                 if nuevoNivel <= nivel then
                     failwith "La expresión actual está incompleta. Se esperaba una expresión indentada."
@@ -123,19 +128,10 @@ let parseTokens (lexer: Lexer) =
             match resultado with
             | EOF -> ER_EOF
             | ErrorLexer err -> ER_Error err
-            | Token (_, indentacion) when indentacion < nivel ->
-                ER_Error <| sprintf "Error de indentacion. Se esperaba una expresion con %i espacios o más, pero el token encontrado tiene %i espacios." nivel indentacion
             | Token (token, identacion) ->
                 match token with
                     | PC_SEA infoToken ->
                         sigExprDeclaracion nivel
-                    (*
-                    | Identificador when token.res = "sea" ->
-                        sigExprDeclaracion nivel
-                    *
-                    | Identificador ->
-                        sigExprIdentificador nivel token
-                    *)
                     | TComentario _ -> sigExpresion nivel
                     | TNumero infoNumero ->
                         ER_Exito (ENumero infoNumero)
