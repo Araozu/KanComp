@@ -12,17 +12,18 @@ let private extraerToken resLexer msgError =
     | Token (token, indentacion) -> token
 
 
+let Any resLexer msgError fnErrorLexer fnEOF =
+    let fnErrorLexer = match fnErrorLexer with
+                       | None -> failwith
+                       | Some f -> f
 
-
-
-let Any resLexer msgError someFnError =
-    let fnError = match someFnError with
-                  | None -> failwith
-                  | Some f -> f
+    let fnEOF = match fnEOF with
+                | None -> failwith
+                | Some f -> f
 
     match resLexer with
-    | ErrorLexer err -> fnError (sprintf "%s (%s)" msgError err)
-    | EOF -> fnError (sprintf "%s (EOF)" msgError)
+    | ErrorLexer err -> fnErrorLexer (sprintf "%s (%s)" msgError err)
+    | EOF -> fnEOF (sprintf "%s (EOF)" msgError)
     | Token (token, indentacion) -> (token, indentacion)
 
 

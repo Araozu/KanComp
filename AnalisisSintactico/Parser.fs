@@ -68,21 +68,23 @@ type ResParser =
     | ErrorParser of string
 
 
-let obtSigIndentacion (lexer: Lexer) =
+let obtSigIndentacion (lexer: Lexer) msgError fnErrorLexer fnEOF =
+    let mutable hayNuevaLinea = false
     try
         while true do
             ignore <| Expect.TNuevaLinea (lexer.LookAhead ()) None ""
+            hayNuevaLinea <- true
             ignore (lexer.SigToken ())
-        -1
+        (-1, true)
     with
     | _ ->
-        let (_, nuevaIndentacion) = Expect.Any (lexer.LookAhead ()) "Se esperaba una expresion luego del signo '='." None
-        nuevaIndentacion
+        let (_, nuevaIndentacion) = Expect.Any (lexer.LookAhead ()) msgError fnErrorLexer fnEOF
+        (nuevaIndentacion, hayNuevaLinea)
 
 
 let parseTokens (lexer: Lexer) =
 
-    let rec sigExpresion nivel =
+    let rec sigExpresion nivel aceptarExprMismoNivel =
 
         let sigExprDeclaracion nivel =
             try
@@ -101,14 +103,15 @@ let parseTokens (lexer: Lexer) =
                 let infoTokenId = Expect.TIdentificador preTokenId None "Se esperaba un identificador"
                 let infoTokenOpAsign = Expect.TOperador (lexer.SigToken ()) (Some "=") "Se esperaba el operador de asignación '=' luego del indentificador."
 
-                let nuevoNivel = obtSigIndentacion lexer
+                let (nuevoNivel, hayNuevaLinea) = obtSigIndentacion lexer "Se esperaba una expresion luego del signo '='." None None
 
-                if nuevoNivel <= nivel then
+                if hayNuevaLinea && nuevoNivel <= nivel then
                     failwith "La expresión actual está incompleta. Se esperaba una expresión indentada."
 
-                match sigExpresion nuevoNivel with
+
+                match sigExpresion nuevoNivel hayNuevaLinea with
                 | ER_EOF -> ER_Error "Se esperaba una expresión luego de la asignacion."
-                | ER_Error err -> ER_Error err
+                | ER_Error err -> ER_Error (sprintf "Se esperaba una expresión luego de la asignación: %s" err)
                 | ER_Exito exprFinal ->
                     ER_Exito <| EDeclaracion {
                         mut = esMut
@@ -118,13 +121,13 @@ let parseTokens (lexer: Lexer) =
                         }
                         valor = exprFinal
                     }
-                
+
             with
             | Failure err -> ER_Error err
 
         let resultado = lexer.SigToken ()
 
-        let sigExprActual = 
+        let sigExprActual =
             match resultado with
             | EOF -> ER_EOF
             | ErrorLexer err -> ER_Error err
@@ -132,7 +135,7 @@ let parseTokens (lexer: Lexer) =
                 match token with
                     | PC_SEA infoToken ->
                         sigExprDeclaracion nivel
-                    | TComentario _ -> sigExpresion nivel
+                    | TComentario _ -> sigExpresion nivel aceptarExprMismoNivel
                     | TNumero infoNumero ->
                         ER_Exito (ENumero infoNumero)
                     | TTexto infoTexto ->
@@ -140,7 +143,7 @@ let parseTokens (lexer: Lexer) =
                     | TBool infoBool ->
                         ER_Exito (EBool infoBool)
                     | TParenAb infoParen ->
-                        let sigToken = sigExpresion nivel
+                        let sigToken = sigExpresion nivel false
                         match sigToken with
                         | ER_Error _ -> sigToken
                         | ER_EOF ->
@@ -157,33 +160,35 @@ let parseTokens (lexer: Lexer) =
                                 | TParenCer _ -> ER_Exito sigToken'
                                 | _ ->
                                     ER_Error <| sprintf "Se esperaba un cierre de parentesis."
-                    | TNuevaLinea _ -> sigExpresion nivel
+                    | TNuevaLinea _ -> sigExpresion nivel aceptarExprMismoNivel
                     | _ ->
                         ER_Error <| sprintf "%s (%A)" "No implementado :c" token
 
-        match (sigExprActual, lexer.LookAhead ()) with
-        | (ER_EOF, _) -> sigExprActual
-        | (ER_Error _, _) -> sigExprActual
-        | (ER_Exito _, EOF) -> sigExprActual
-        | (ER_Exito _, ErrorLexer err) -> ER_Error err
-        | (ER_Exito exprAct, Token (_, indentacion2)) ->
-            if indentacion2 = nivel then
-                let sigExprTop = sigExpresion nivel
-                match sigExprTop with
-                | ER_Error err -> ER_Error err
-                | ER_EOF -> sigExprActual
-                | ER_Exito expr ->
-                    ER_Exito <| match expr with
-                                | EBloque exprs ->
-                                    EBloque <| exprAct :: exprs
-                                | _ ->
-                                    EBloque <| [exprAct; expr]
-            else
-                sigExprActual
+        match sigExprActual with
+        | ER_EOF -> sigExprActual
+        | ER_Error _ -> sigExprActual
+        | ER_Exito exprAct ->
+            try
+                let (sigNivelIndentacion, _) = obtSigIndentacion lexer "" (Some invalidOp) None
+                if aceptarExprMismoNivel && sigNivelIndentacion = nivel then
+                    let sigExprTop = sigExpresion nivel aceptarExprMismoNivel
+                    match sigExprTop with
+                    | ER_Error err -> ER_Error err
+                    | ER_EOF -> sigExprActual
+                    | ER_Exito expr ->
+                        ER_Exito <| match expr with
+                                    | EBloque exprs ->
+                                        EBloque <| exprAct :: exprs
+                                    | _ ->
+                                        EBloque <| [exprAct; expr]
+                else
+                    sigExprActual
+            with
+            | :? System.InvalidOperationException as err -> ER_Error err.Message
+            | _ -> sigExprActual
 
 
-
-    let expr' = sigExpresion 0
+    let expr' = sigExpresion 0 true
     match expr' with
     | ER_Error err -> ErrorParser err
     | ER_Exito expr -> ExitoParser expr

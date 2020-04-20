@@ -32,12 +32,12 @@ let rec generarJs (expr: Expresion) toplevel =
                 else
                     "return " + generarJs e false + ";"
             | e :: es ->
-                generarJs e false + ";\n\n" + generarInner es 
+                generarJs e false + ";" + (if toplevel then "\n" else "") + "\n" + generarInner es 
 
         if toplevel then
             generarInner exprs
         else
-            "(() => {\n" + generarInner exprs + "\n}();"
+            "(() => {\n" + generarInner exprs + "\n})()"
 
 
     match expr with
