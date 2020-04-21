@@ -63,6 +63,7 @@ let rec generarJs (expr: Expresion) toplevel nivel =
     | ENumero infoToken -> generarJS_ENumero infoToken
     | ETexto info -> generarJS_ETexto info
     | EBool info -> generarJS_EBool info
+    | EIdentificador datos -> generarJS_EIdentificador datos
     | EDeclaracion dec -> generarJS_EDeclaracion dec
     | _ -> "/* No implementado :c */"
 

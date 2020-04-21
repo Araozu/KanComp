@@ -125,6 +125,65 @@ let parseTokens (lexer: Lexer) =
             with
             | Failure err -> ER_Error err
 
+        let rec sigExprFuncion funExpr paramExpr nivel =
+            let exprFunAct = EFuncion {
+                signatura = Indefinida
+                fn = funExpr
+                param = paramExpr
+            }
+            
+            match lexer.SigToken () with
+            | EOF -> ER_Exito exprFunAct
+            | ErrorLexer err -> ER_Error err
+            | Token (token, indentacion) ->
+                match token with
+                | TIdentificador infoId2 ->
+                    let expr2 = EIdentificador {
+                        signatura = Indefinida
+                        valor = infoId2
+                    }
+                    sigExprFuncion exprFunAct expr2 nivel
+                | TNumero infoNum ->
+                    let expr2 = ENumero infoNum
+                    sigExprFuncion exprFunAct expr2 nivel
+                | TTexto infoTxt ->
+                    let expr2 = ETexto infoTxt
+                    sigExprFuncion exprFunAct expr2 nivel
+                | TBool infoBool ->
+                    let expr2 = EBool infoBool
+                    sigExprFuncion exprFunAct expr2 nivel
+                | _ -> ER_Exito exprFunAct
+
+
+        let sigExprIdentificador infoId nivel =
+            let primeraExprId = EIdentificador {
+                signatura = Indefinida
+                valor = infoId
+            }
+
+            match lexer.SigToken () with
+            | EOF -> ER_Exito primeraExprId
+            | ErrorLexer err -> ER_Error err
+            | Token (token, indentacion) ->
+                match token with
+                | TIdentificador infoId2 ->
+                    let expr2 = EIdentificador {
+                        signatura = Indefinida
+                        valor = infoId
+                    }
+                    sigExprFuncion primeraExprId expr2 nivel
+                | TNumero infoNum ->
+                    let expr2 = ENumero infoNum
+                    sigExprFuncion primeraExprId expr2 nivel
+                | TTexto infoTxt ->
+                    let expr2 = ETexto infoTxt
+                    sigExprFuncion primeraExprId expr2 nivel
+                | TBool infoBool ->
+                    let expr2 = EBool infoBool
+                    sigExprFuncion primeraExprId expr2 nivel
+                | _ -> ER_Exito primeraExprId
+
+
         let resultado = lexer.SigToken ()
 
         let sigExprActual =
@@ -142,6 +201,8 @@ let parseTokens (lexer: Lexer) =
                         ER_Exito (ETexto infoTexto)
                     | TBool infoBool ->
                         ER_Exito (EBool infoBool)
+                    | TIdentificador infoId ->
+                        sigExprIdentificador infoId nivel
                     | TParenAb infoParen ->
                         let sigToken = sigExpresion nivel false
                         match sigToken with
