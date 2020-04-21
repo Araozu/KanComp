@@ -31,6 +31,12 @@ let rec generarJs (expr: Expresion) toplevel nivel =
         | _ ->
             inicio + " " + id + " = " + valor
 
+    let generarJS_EFuncion (efuncion: EFuncion) =
+        let jsFun = generarJs efuncion.fn false nivel
+        let jsParam = generarJs efuncion.param false nivel
+        sprintf "%s(%s)" jsFun jsParam
+
+
     let generarJS_EBloque exprs toplevel =
 
         let rec generarInner exprs =
@@ -65,5 +71,6 @@ let rec generarJs (expr: Expresion) toplevel nivel =
     | EBool info -> generarJS_EBool info
     | EIdentificador datos -> generarJS_EIdentificador datos
     | EDeclaracion dec -> generarJS_EDeclaracion dec
+    | EFuncion efuncion -> generarJS_EFuncion efuncion
     | _ -> "/* No implementado :c */"
 

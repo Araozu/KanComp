@@ -169,7 +169,7 @@ let parseTokens (lexer: Lexer) =
                 | TIdentificador infoId2 ->
                     let expr2 = EIdentificador {
                         signatura = Indefinida
-                        valor = infoId
+                        valor = infoId2
                     }
                     sigExprFuncion primeraExprId expr2 nivel
                 | TNumero infoNum ->
