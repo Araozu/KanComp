@@ -59,9 +59,9 @@ and Expresion =
 
 
 type ExprRes =
-    | ER_Exito of Expresion
-    | ER_Error of string
-    | ER_EOF
+    | PExito of Expresion
+    | PError of string
+    | PEOF
 
 type ResParser =
     | ExitoParser of Expresion
@@ -110,10 +110,10 @@ let parseTokens (lexer: Lexer) =
 
 
                 match sigExpresion nuevoNivel hayNuevaLinea with
-                | ER_EOF -> ER_Error "Se esperaba una expresión luego de la asignacion."
-                | ER_Error err -> ER_Error (sprintf "Se esperaba una expresión luego de la asignación: %s" err)
-                | ER_Exito exprFinal ->
-                    ER_Exito <| EDeclaracion {
+                | PEOF -> PError "Se esperaba una expresión luego de la asignacion."
+                | PError err -> PError (sprintf "Se esperaba una expresión luego de la asignación: %s" err)
+                | PExito exprFinal ->
+                    PExito <| EDeclaracion {
                         mut = esMut
                         id = {
                             signatura = Indefinida
@@ -123,7 +123,7 @@ let parseTokens (lexer: Lexer) =
                     }
 
             with
-            | Failure err -> ER_Error err
+            | Failure err -> PError err
 
         let rec sigExprFuncion funExpr paramExpr nivel =
             let exprFunAct = EFuncion {
@@ -133,8 +133,8 @@ let parseTokens (lexer: Lexer) =
             }
             
             match lexer.SigToken () with
-            | EOF -> ER_Exito exprFunAct
-            | ErrorLexer err -> ER_Error err
+            | EOF -> PExito exprFunAct
+            | ErrorLexer err -> PError err
             | Token (token, indentacion) ->
                 match token with
                 | TIdentificador infoId2 ->
@@ -152,7 +152,7 @@ let parseTokens (lexer: Lexer) =
                 | TBool infoBool ->
                     let expr2 = EBool infoBool
                     sigExprFuncion exprFunAct expr2 nivel
-                | _ -> ER_Exito exprFunAct
+                | _ -> PExito exprFunAct
 
 
         let sigExprIdentificador infoId nivel =
@@ -162,8 +162,8 @@ let parseTokens (lexer: Lexer) =
             }
 
             match lexer.SigToken () with
-            | EOF -> ER_Exito primeraExprId
-            | ErrorLexer err -> ER_Error err
+            | EOF -> PExito primeraExprId
+            | ErrorLexer err -> PError err
             | Token (token, indentacion) ->
                 match token with
                 | TIdentificador infoId2 ->
@@ -181,63 +181,63 @@ let parseTokens (lexer: Lexer) =
                 | TBool infoBool ->
                     let expr2 = EBool infoBool
                     sigExprFuncion primeraExprId expr2 nivel
-                | _ -> ER_Exito primeraExprId
+                | _ -> PExito primeraExprId
 
 
         let resultado = lexer.SigToken ()
 
         let sigExprActual =
             match resultado with
-            | EOF -> ER_EOF
-            | ErrorLexer err -> ER_Error err
+            | EOF -> PEOF
+            | ErrorLexer err -> PError err
             | Token (token, identacion) ->
                 match token with
                     | PC_SEA infoToken ->
                         sigExprDeclaracion nivel
                     | TComentario _ -> sigExpresion nivel aceptarExprMismoNivel
                     | TNumero infoNumero ->
-                        ER_Exito (ENumero infoNumero)
+                        PExito (ENumero infoNumero)
                     | TTexto infoTexto ->
-                        ER_Exito (ETexto infoTexto)
+                        PExito (ETexto infoTexto)
                     | TBool infoBool ->
-                        ER_Exito (EBool infoBool)
+                        PExito (EBool infoBool)
                     | TIdentificador infoId ->
                         sigExprIdentificador infoId nivel
                     | TParenAb infoParen ->
                         let sigToken = sigExpresion nivel false
                         match sigToken with
-                        | ER_Error _ -> sigToken
-                        | ER_EOF ->
-                            ER_Error <| sprintf "El parentesis abierto en %i no está cerrado." infoParen.inicio
-                        | ER_Exito sigToken' ->
+                        | PError _ -> sigToken
+                        | PEOF ->
+                            PError <| sprintf "El parentesis abierto en %i no está cerrado." infoParen.inicio
+                        | PExito sigToken' ->
                             let ultimoToken = lexer.SigToken ()
                             match ultimoToken with
                             | EOF ->
-                                ER_Error <| sprintf "El parentesis abierto en %i contiene una expresion, pero no está cerrado." infoParen.inicio
+                                PError <| sprintf "El parentesis abierto en %i contiene una expresion, pero no está cerrado." infoParen.inicio
                             | ErrorLexer error ->
-                                ER_Error <| sprintf "El parentesis abierto en %i no está cerrado debido a un error léxico: %s" infoParen.inicio error
+                                PError <| sprintf "El parentesis abierto en %i no está cerrado debido a un error léxico: %s" infoParen.inicio error
                             | Token (ultimoToken', indentacion2) ->
                                 match ultimoToken' with
-                                | TParenCer _ -> ER_Exito sigToken'
+                                | TParenCer _ -> PExito sigToken'
                                 | _ ->
-                                    ER_Error <| sprintf "Se esperaba un cierre de parentesis."
+                                    PError <| sprintf "Se esperaba un cierre de parentesis."
                     | TNuevaLinea _ -> sigExpresion nivel aceptarExprMismoNivel
                     | _ ->
-                        ER_Error <| sprintf "%s (%A)" "No implementado :c" token
+                        PError <| sprintf "%s (%A)" "No implementado :c" token
 
         match sigExprActual with
-        | ER_EOF -> sigExprActual
-        | ER_Error _ -> sigExprActual
-        | ER_Exito exprAct ->
+        | PEOF -> sigExprActual
+        | PError _ -> sigExprActual
+        | PExito exprAct ->
             try
                 let (sigNivelIndentacion, _) = obtSigIndentacion lexer "" (Some invalidOp) None
                 if aceptarExprMismoNivel && sigNivelIndentacion = nivel then
                     let sigExprTop = sigExpresion nivel aceptarExprMismoNivel
                     match sigExprTop with
-                    | ER_Error err -> ER_Error err
-                    | ER_EOF -> sigExprActual
-                    | ER_Exito expr ->
-                        ER_Exito <| match expr with
+                    | PError err -> PError err
+                    | PEOF -> sigExprActual
+                    | PExito expr ->
+                        PExito <| match expr with
                                     | EBloque exprs ->
                                         EBloque <| exprAct :: exprs
                                     | _ ->
@@ -245,13 +245,13 @@ let parseTokens (lexer: Lexer) =
                 else
                     sigExprActual
             with
-            | :? System.InvalidOperationException as err -> ER_Error err.Message
+            | :? System.InvalidOperationException as err -> PError err.Message
             | _ -> sigExprActual
 
 
     let expr' = sigExpresion 0 true
     match expr' with
-    | ER_Error err -> ErrorParser err
-    | ER_Exito expr -> ExitoParser expr
-    | ER_EOF -> ErrorParser "EOF sin tratar en el parser."
+    | PError err -> ErrorParser err
+    | PExito expr -> ExitoParser expr
+    | PEOF -> ErrorParser "EOF sin tratar en el parser."
 

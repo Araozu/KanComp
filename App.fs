@@ -2,7 +2,6 @@ module App
 
 open AnalisisLexico.Gramatica
 open AnalisisLexico.Lexer
-open AnalisisSintactico.Expresion
 open AnalisisSintactico.Parser
 open Generador
 

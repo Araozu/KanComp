@@ -8,11 +8,10 @@
   <ItemGroup>
         <Compile Include="AnalisisLexico\Lexer.fs" />
         <Compile Include="AnalisisLexico\Gramatica.fs" />
-        <Compile Include="AnalisisSintactico\Expresion.fs" />
         <Compile Include="AnalisisSintactico\Expectations.fs" />
         <Compile Include="AnalisisSintactico\Parser.fs" />
         <Compile Include="Generacion\Generador.fs" />
-        <Compile Include="Utils\Archivo.fs"/>
+        <Compile Include="Utils\Archivo.fs" />
         <Compile Include="App.fs" />
     </ItemGroup>
 
