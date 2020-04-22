@@ -68,6 +68,11 @@ type ResParser =
     | ErrorParser of string
 
 
+type Asociatividad =
+    | Izq
+    | Der
+
+
 let obtSigIndentacion (lexer: Lexer) msgError fnErrorLexer fnEOF =
     let mutable hayNuevaLinea = false
     try
@@ -84,105 +89,110 @@ let obtSigIndentacion (lexer: Lexer) msgError fnErrorLexer fnEOF =
 
 let parseTokens (lexer: Lexer) =
 
-    let rec sigExpresion nivel aceptarExprMismoNivel =
-
-        let sigExprDeclaracion nivel =
-            try
-                let mutable esMut = false
-                let token2 = lexer.SigToken ()
-                let mutable preTokenId = token2
+    let rec sigExprDeclaracion nivel =
+        try
+            let mutable esMut = false
+            let token2 = lexer.SigToken ()
+            let mutable preTokenId = token2
                 
-                try
-                    let infoTokenMut = Expect.PC_MUT token2 None ""
-                    esMut <- true
-                    preTokenId <- lexer.SigToken()
-                    ()
-                with
-                | _ -> ()
-
-                let infoTokenId = Expect.TIdentificador preTokenId None "Se esperaba un identificador"
-                let infoTokenOpAsign = Expect.TOperador (lexer.SigToken ()) (Some "=") "Se esperaba el operador de asignación '=' luego del indentificador."
-
-                let (nuevoNivel, hayNuevaLinea) = obtSigIndentacion lexer "Se esperaba una expresion luego del signo '='." None None
-
-                if hayNuevaLinea && nuevoNivel <= nivel then
-                    failwith "La expresión actual está incompleta. Se esperaba una expresión indentada."
-
-
-                match sigExpresion nuevoNivel hayNuevaLinea with
-                | PEOF -> PError "Se esperaba una expresión luego de la asignacion."
-                | PError err -> PError (sprintf "Se esperaba una expresión luego de la asignación: %s" err)
-                | PExito exprFinal ->
-                    PExito <| EDeclaracion {
-                        mut = esMut
-                        id = {
-                            signatura = Indefinida
-                            valor = infoTokenId
-                        }
-                        valor = exprFinal
-                    }
-
+            try
+                let infoTokenMut = Expect.PC_MUT token2 None ""
+                esMut <- true
+                preTokenId <- lexer.SigToken()
+                ()
             with
-            | Failure err -> PError err
+            | _ -> ()
 
-        let rec sigExprFuncion funExpr paramExpr nivel =
-            let exprFunAct = EFuncion {
-                signatura = Indefinida
-                fn = funExpr
-                param = paramExpr
-            }
+            let infoTokenId = Expect.TIdentificador preTokenId None "Se esperaba un identificador"
+            let infoTokenOpAsign = Expect.TOperador (lexer.SigToken ()) (Some "=") "Se esperaba el operador de asignación '=' luego del indentificador."
+
+            let (nuevoNivel, hayNuevaLinea) = obtSigIndentacion lexer "Se esperaba una expresion luego del signo '='." None None
+
+            if hayNuevaLinea && nuevoNivel <= nivel then
+                failwith "La expresión actual está incompleta. Se esperaba una expresión indentada."
+
+
+            match sigExpresion nuevoNivel hayNuevaLinea with
+            | PEOF -> PError "Se esperaba una expresión luego de la asignacion."
+            | PError err -> PError (sprintf "Se esperaba una expresión luego de la asignación: %s" err)
+            | PExito exprFinal ->
+                PExito <| EDeclaracion {
+                    mut = esMut
+                    id = {
+                        signatura = Indefinida
+                        valor = infoTokenId
+                    }
+                    valor = exprFinal
+                }
+
+        with
+        | Failure err -> PError err
+
+
+    and sigExprOperador exprIzq infoOp =
+        ()
+
+
+    and sigExprFuncion funExpr paramExpr nivel =
+        let exprFunAct = EFuncion {
+            signatura = Indefinida
+            fn = funExpr
+            param = paramExpr
+        }
             
-            match lexer.SigToken () with
-            | EOF -> PExito exprFunAct
-            | ErrorLexer err -> PError err
-            | Token (token, indentacion) ->
-                match token with
-                | TIdentificador infoId2 ->
-                    let expr2 = EIdentificador {
-                        signatura = Indefinida
-                        valor = infoId2
-                    }
-                    sigExprFuncion exprFunAct expr2 nivel
-                | TNumero infoNum ->
-                    let expr2 = ENumero infoNum
-                    sigExprFuncion exprFunAct expr2 nivel
-                | TTexto infoTxt ->
-                    let expr2 = ETexto infoTxt
-                    sigExprFuncion exprFunAct expr2 nivel
-                | TBool infoBool ->
-                    let expr2 = EBool infoBool
-                    sigExprFuncion exprFunAct expr2 nivel
-                | _ -> PExito exprFunAct
+        match lexer.SigToken () with
+        | EOF -> PExito exprFunAct
+        | ErrorLexer err -> PError err
+        | Token (token, indentacion) ->
+            match token with
+            | TIdentificador infoId2 ->
+                let expr2 = EIdentificador {
+                    signatura = Indefinida
+                    valor = infoId2
+                }
+                sigExprFuncion exprFunAct expr2 nivel
+            | TNumero infoNum ->
+                let expr2 = ENumero infoNum
+                sigExprFuncion exprFunAct expr2 nivel
+            | TTexto infoTxt ->
+                let expr2 = ETexto infoTxt
+                sigExprFuncion exprFunAct expr2 nivel
+            | TBool infoBool ->
+                let expr2 = EBool infoBool
+                sigExprFuncion exprFunAct expr2 nivel
+            | _ -> PExito exprFunAct
 
 
-        let sigExprIdentificador infoId nivel =
-            let primeraExprId = EIdentificador {
-                signatura = Indefinida
-                valor = infoId
-            }
+    and sigExprIdentificador infoId nivel =
+        let primeraExprId = EIdentificador {
+            signatura = Indefinida
+            valor = infoId
+        }
 
-            match lexer.SigToken () with
-            | EOF -> PExito primeraExprId
-            | ErrorLexer err -> PError err
-            | Token (token, indentacion) ->
-                match token with
-                | TIdentificador infoId2 ->
-                    let expr2 = EIdentificador {
-                        signatura = Indefinida
-                        valor = infoId2
-                    }
-                    sigExprFuncion primeraExprId expr2 nivel
-                | TNumero infoNum ->
-                    let expr2 = ENumero infoNum
-                    sigExprFuncion primeraExprId expr2 nivel
-                | TTexto infoTxt ->
-                    let expr2 = ETexto infoTxt
-                    sigExprFuncion primeraExprId expr2 nivel
-                | TBool infoBool ->
-                    let expr2 = EBool infoBool
-                    sigExprFuncion primeraExprId expr2 nivel
-                | _ -> PExito primeraExprId
+        match lexer.SigToken () with
+        | EOF -> PExito primeraExprId
+        | ErrorLexer err -> PError err
+        | Token (token, indentacion) ->
+            match token with
+            | TIdentificador infoId2 ->
+                let expr2 = EIdentificador {
+                    signatura = Indefinida
+                    valor = infoId2
+                }
+                sigExprFuncion primeraExprId expr2 nivel
+            | TNumero infoNum ->
+                let expr2 = ENumero infoNum
+                sigExprFuncion primeraExprId expr2 nivel
+            | TTexto infoTxt ->
+                let expr2 = ETexto infoTxt
+                sigExprFuncion primeraExprId expr2 nivel
+            | TBool infoBool ->
+                let expr2 = EBool infoBool
+                sigExprFuncion primeraExprId expr2 nivel
+            | _ -> PExito primeraExprId            
 
+
+    and sigExpresion nivel aceptarExprMismoNivel =
 
         let resultado = lexer.SigToken ()
 
@@ -192,38 +202,42 @@ let parseTokens (lexer: Lexer) =
             | ErrorLexer err -> PError err
             | Token (token, identacion) ->
                 match token with
-                    | PC_SEA infoToken ->
-                        sigExprDeclaracion nivel
-                    | TComentario _ -> sigExpresion nivel aceptarExprMismoNivel
-                    | TNumero infoNumero ->
-                        PExito (ENumero infoNumero)
-                    | TTexto infoTexto ->
-                        PExito (ETexto infoTexto)
-                    | TBool infoBool ->
-                        PExito (EBool infoBool)
-                    | TIdentificador infoId ->
-                        sigExprIdentificador infoId nivel
-                    | TParenAb infoParen ->
-                        let sigToken = sigExpresion nivel false
-                        match sigToken with
-                        | PError _ -> sigToken
-                        | PEOF ->
-                            PError <| sprintf "El parentesis abierto en %i no está cerrado." infoParen.inicio
-                        | PExito sigToken' ->
-                            let ultimoToken = lexer.SigToken ()
-                            match ultimoToken with
-                            | EOF ->
-                                PError <| sprintf "El parentesis abierto en %i contiene una expresion, pero no está cerrado." infoParen.inicio
-                            | ErrorLexer error ->
-                                PError <| sprintf "El parentesis abierto en %i no está cerrado debido a un error léxico: %s" infoParen.inicio error
-                            | Token (ultimoToken', indentacion2) ->
-                                match ultimoToken' with
-                                | TParenCer _ -> PExito sigToken'
-                                | _ ->
-                                    PError <| sprintf "Se esperaba un cierre de parentesis."
-                    | TNuevaLinea _ -> sigExpresion nivel aceptarExprMismoNivel
-                    | _ ->
-                        PError <| sprintf "%s (%A)" "No implementado :c" token
+                | PC_SEA infoToken ->
+                    sigExprDeclaracion nivel
+                | PC_MUT _ -> PError "No se esperaba la palabra clave 'sea' aquí."
+                | TComentario _ -> sigExpresion nivel aceptarExprMismoNivel
+                | TNumero infoNumero ->
+                    PExito (ENumero infoNumero)
+                | TTexto infoTexto ->
+                    PExito (ETexto infoTexto)
+                | TBool infoBool ->
+                    PExito (EBool infoBool)
+                | TIdentificador infoId ->
+                    sigExprIdentificador infoId nivel
+                | TParenAb infoParen ->
+                    let sigToken = sigExpresion nivel false
+                    match sigToken with
+                    | PError _ -> sigToken
+                    | PEOF ->
+                        PError <| sprintf "El parentesis abierto en %i no está cerrado." infoParen.inicio
+                    | PExito sigToken' ->
+                        let ultimoToken = lexer.SigToken ()
+                        match ultimoToken with
+                        | EOF ->
+                            PError <| sprintf "El parentesis abierto en %i contiene una expresion, pero no está cerrado." infoParen.inicio
+                        | ErrorLexer error ->
+                            PError <| sprintf "El parentesis abierto en %i no está cerrado debido a un error léxico: %s" infoParen.inicio error
+                        | Token (ultimoToken', indentacion2) ->
+                            match ultimoToken' with
+                            | TParenCer _ -> PExito sigToken'
+                            | _ ->
+                                PError <| sprintf "Se esperaba un cierre de parentesis."
+                | TParenCer _ -> PError "No se esperaba un parentesis aquí."
+                | TNuevaLinea _ -> sigExpresion nivel aceptarExprMismoNivel
+                | TAgrupAb _ | TAgrupCer _ -> PError "Otros signos de agrupacion aun no estan soportados."
+                | TGenerico _ -> PError "Los genericos aun no estan soportados."
+                | TOperador _ -> PError "No se puede usar un operador como expresion. Si esa es tu intención, rodea el operador en paréntesis, por ejemplo: (+)"
+
 
         match sigExprActual with
         | PEOF -> sigExprActual
