@@ -96,7 +96,7 @@ let parseTokens (lexer: Lexer) =
             let mutable preTokenId = token2
                 
             try
-                let infoTokenMut = Expect.PC_MUT token2 None ""
+                let _ = Expect.PC_MUT token2 None ""
                 esMut <- true
                 preTokenId <- lexer.SigToken()
                 ()
@@ -104,7 +104,7 @@ let parseTokens (lexer: Lexer) =
             | _ -> ()
 
             let infoTokenId = Expect.TIdentificador preTokenId None "Se esperaba un identificador"
-            let infoTokenOpAsign = Expect.TOperador (lexer.SigToken ()) (Some "=") "Se esperaba el operador de asignación '=' luego del indentificador."
+            let _ = Expect.TOperador (lexer.SigToken ()) (Some "=") "Se esperaba el operador de asignación '=' luego del indentificador."
 
             let (nuevoNivel, hayNuevaLinea) = obtSigIndentacion lexer "Se esperaba una expresion luego del signo '='." None None
 
@@ -143,7 +143,7 @@ let parseTokens (lexer: Lexer) =
         match lexer.SigToken () with
         | EOF -> PExito exprFunAct
         | ErrorLexer err -> PError err
-        | Token (token, indentacion) ->
+        | Token (token, _) ->
             match token with
             | TIdentificador infoId2 ->
                 let expr2 = EIdentificador {
@@ -172,7 +172,7 @@ let parseTokens (lexer: Lexer) =
         match lexer.SigToken () with
         | EOF -> PExito primeraExprId
         | ErrorLexer err -> PError err
-        | Token (token, indentacion) ->
+        | Token (token, _) ->
             match token with
             | TIdentificador infoId2 ->
                 let expr2 = EIdentificador {
@@ -192,6 +192,26 @@ let parseTokens (lexer: Lexer) =
             | _ -> PExito primeraExprId            
 
 
+    and sigExprParen infoParen nivel =
+        let sigToken = sigExpresion nivel false
+        match sigToken with
+        | PError _ -> sigToken
+        | PEOF ->
+            PError <| sprintf "El parentesis abierto en %i no está cerrado." infoParen.inicio
+        | PExito sigToken' ->
+            let ultimoToken = lexer.SigToken ()
+            match ultimoToken with
+            | EOF ->
+                PError <| sprintf "El parentesis abierto en %i contiene una expresion, pero no está cerrado." infoParen.inicio
+            | ErrorLexer error ->
+                PError <| sprintf "El parentesis abierto en %i no está cerrado debido a un error léxico: %s" infoParen.inicio error
+            | Token (ultimoToken', _) ->
+                match ultimoToken' with
+                | TParenCer _ -> PExito sigToken'
+                | _ ->
+                    PError <| sprintf "Se esperaba un cierre de parentesis."
+
+
     and sigExpresion nivel aceptarExprMismoNivel =
 
         let resultado = lexer.SigToken ()
@@ -200,9 +220,9 @@ let parseTokens (lexer: Lexer) =
             match resultado with
             | EOF -> PEOF
             | ErrorLexer err -> PError err
-            | Token (token, identacion) ->
+            | Token (token, _) ->
                 match token with
-                | PC_SEA infoToken ->
+                | PC_SEA _ ->
                     sigExprDeclaracion nivel
                 | PC_MUT _ -> PError "No se esperaba la palabra clave 'sea' aquí."
                 | TComentario _ -> sigExpresion nivel aceptarExprMismoNivel
@@ -215,23 +235,7 @@ let parseTokens (lexer: Lexer) =
                 | TIdentificador infoId ->
                     sigExprIdentificador infoId nivel
                 | TParenAb infoParen ->
-                    let sigToken = sigExpresion nivel false
-                    match sigToken with
-                    | PError _ -> sigToken
-                    | PEOF ->
-                        PError <| sprintf "El parentesis abierto en %i no está cerrado." infoParen.inicio
-                    | PExito sigToken' ->
-                        let ultimoToken = lexer.SigToken ()
-                        match ultimoToken with
-                        | EOF ->
-                            PError <| sprintf "El parentesis abierto en %i contiene una expresion, pero no está cerrado." infoParen.inicio
-                        | ErrorLexer error ->
-                            PError <| sprintf "El parentesis abierto en %i no está cerrado debido a un error léxico: %s" infoParen.inicio error
-                        | Token (ultimoToken', indentacion2) ->
-                            match ultimoToken' with
-                            | TParenCer _ -> PExito sigToken'
-                            | _ ->
-                                PError <| sprintf "Se esperaba un cierre de parentesis."
+                    sigExprParen infoParen nivel
                 | TParenCer _ -> PError "No se esperaba un parentesis aquí."
                 | TNuevaLinea _ -> sigExpresion nivel aceptarExprMismoNivel
                 | TAgrupAb _ | TAgrupCer _ -> PError "Otros signos de agrupacion aun no estan soportados."
